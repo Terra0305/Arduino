@@ -115,7 +115,6 @@ export function classFormPage({ cls = null, error = '' }) {
     description: cls?.description ?? '',
     code: cls?.code ?? '',
     materials: (cls?.materials ?? []).join('\n'),
-    wiringDescription: cls?.wiringDescription ?? '',
     wiringImage: cls?.wiringImage ?? '',
     notice: cls?.notice ?? '',
     isCurrent: cls?.isCurrent ?? isNew,
@@ -135,9 +134,6 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
 
   <label for="materials">준비물 <span class="dim">(한 줄에 하나씩)</span></label>
   <textarea id="materials" name="materials" rows="5" placeholder="Arduino UNO&#10;LCD 화면&#10;점퍼선 4개">${esc(v.materials)}</textarea>
-
-  <label for="wiringDescription">연결 방법 (글)</label>
-  <textarea id="wiringDescription" name="wiringDescription" rows="6" class="mono" placeholder="LCD GND - Arduino GND&#10;LCD VCC - Arduino 5V">${esc(v.wiringDescription)}</textarea>
 
   <label for="wiringFile">연결 방법 (그림)</label>
   <input type="file" id="wiringFile" accept="image/*">

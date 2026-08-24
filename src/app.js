@@ -104,7 +104,8 @@ function readClassForm(form) {
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean),
-    wiringDescription: form.get('wiringDescription') || '',
+    // 연결 방법은 그림으로만 받는다. 이미 저장된 글은 아래에서 그대로 유지한다.
+    wiringDescription: '',
     wiringImage: /^data:image\/[a-z+.-]+;base64,[A-Za-z0-9+/=]+$/.test(wiringImage) ? wiringImage : '',
     notice: (form.get('notice') || '').trim(),
     isCurrent: form.get('isCurrent') === '1',
@@ -179,7 +180,8 @@ async function handleAdmin(req, res, url) {
     if (!data.title) {
       return html(res, admin.classFormPage({ cls: { ...cls, ...data }, error: '수업 제목을 입력해 주세요.' }), 400);
     }
-    await store.updateClass(id, data);
+    // 입력칸이 없어진 항목은 저장된 값을 그대로 둔다.
+    await store.updateClass(id, { ...data, wiringDescription: cls.wiringDescription });
     return redirect(res, '/admin/classes');
   }
 
