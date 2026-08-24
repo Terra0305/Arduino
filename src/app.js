@@ -15,7 +15,11 @@ const MAX_NAME_LENGTH = 20;
 const MAX_QUESTION_LENGTH = 500;
 const MAX_FEEDBACK_LENGTH = 2000;
 
-const STATIC_TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+const STATIC_TYPES = {
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.svg': 'image/svg+xml',
+};
 
 async function serveStatic(res, pathname) {
   const ext = path.extname(pathname);

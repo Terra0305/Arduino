@@ -8,7 +8,7 @@ export function layout({ title, body, variant = 'student', head = '', scripts = 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>${esc(title)}</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>%F0%9F%94%A7</text></svg>">
+<link rel="icon" href="/arduino-logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">
 ${head}
 </head>
@@ -17,14 +17,14 @@ ${head}
   <div class="wrap">
     ${
       variant === 'admin'
-        ? `<a class="brand" href="/admin">🔧 아두이노 수업 <span>관리자</span></a>
+        ? `<a class="brand" href="/admin"><img class="brandlogo" src="/arduino-logo.svg" alt=""> <span class="brandname">아두이노 수업</span> <span>관리자</span></a>
            <nav class="topnav">
              <a href="/admin/classes">수업 목록</a>
              <a href="/admin/submissions">학생 질문</a>
              <a href="/" target="_blank" rel="noopener">학생 화면</a>
              <form method="post" action="/admin/logout"><button class="linklike" type="submit">로그아웃</button></form>
            </nav>`
-        : `<a class="brand" href="/">🔧 아두이노 수업</a>
+        : `<a class="brand" href="/"><img class="brandlogo" src="/arduino-logo.svg" alt=""> <span class="brandname">아두이노 수업</span></a>
            <nav class="topnav studentnav">
              <a href="/classes">수업 목록</a>
            </nav>`
