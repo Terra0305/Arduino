@@ -228,6 +228,10 @@ export async function handleRequest(req, res) {
         Connection: 'close',
       });
     }
+    if (err?.message === 'NO_DATABASE') {
+      console.error('DATABASE_URL 환경변수가 없습니다. Vercel 의 Storage 에서 Postgres 를 연결하세요.');
+      return html(res, student.setupPage(), 503);
+    }
     console.error(err);
     if (!res.headersSent) html(res, student.errorPage('문제가 생겼어요. 잠시 후 다시 시도해 주세요.'), 500);
   }

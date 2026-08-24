@@ -3,13 +3,9 @@ import { neon } from '@neondatabase/serverless';
 const CONNECTION_STRING =
   process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-if (!CONNECTION_STRING) {
-  throw new Error(
-    'DATABASE_URL 환경변수가 없습니다. Vercel 대시보드의 Storage 에서 Postgres 를 연결해 주세요.',
-  );
-}
-
-const sql = neon(CONNECTION_STRING);
+// 여기서 예외를 던지면 함수가 시작조차 못 해서 원인을 알 수 없는 오류 화면이 나온다.
+// 접속문자열이 없다는 사실은 ready() 에서 알려준다.
+const sql = CONNECTION_STRING ? neon(CONNECTION_STRING) : null;
 
 /* 서버가 첫 요청을 받을 때 한 번만 테이블을 만든다. */
 let readyPromise = null;
@@ -26,6 +22,7 @@ export function ready() {
 }
 
 async function initialize() {
+  if (!sql) throw new Error('NO_DATABASE');
   await sql`
     CREATE TABLE IF NOT EXISTS classes (
       id                 SERIAL PRIMARY KEY,

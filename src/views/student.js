@@ -174,3 +174,22 @@ export function errorPage(message) {
 </section>`;
   return layout({ title: '아두이노 수업', body });
 }
+
+/** 아직 데이터베이스를 연결하지 않았을 때 (배포 직후 한 번만 보게 된다). */
+export function setupPage() {
+  const body = `
+<section class="card hero">
+  <p class="eyebrow">준비 중</p>
+  <h1>아직 준비가 끝나지 않았어요.</h1>
+  <p class="lead">학생들은 잠시 기다렸다가 새로고침(F5) 해 주세요.</p>
+</section>
+<section class="card">
+  <h2>선생님께</h2>
+  <p>데이터베이스가 아직 연결되지 않았습니다. Vercel에서 두 가지만 하면 됩니다.</p>
+  <ol class="steps">
+    <li><span class="stepicon">1️⃣</span><span><b>Storage → Create Database → Neon (Postgres) → Connect</b></span></li>
+    <li><span class="stepicon">2️⃣</span><span><b>Deployments → 맨 위 항목 → ⋯ → Redeploy</b> <span class="dim">(환경변수는 다시 배포해야 반영됩니다)</span></span></li>
+  </ol>
+</section>`;
+  return layout({ title: '준비 중 · 아두이노 수업', body });
+}
