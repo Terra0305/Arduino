@@ -19,7 +19,7 @@ export function loginPage(error = '') {
 function submissionRow(s, { dim = false } = {}) {
   return `<li class="${dim ? 'dimmed' : ''}">
   <a href="/admin/submissions/${s.id}">
-    <span class="st">${dim ? '✅' : '🔴'} ${esc(s.studentName)}</span>
+    <span class="st">${dim ? '✅' : '🔴'} ${esc(s.studentName)}${s.feedback ? ' 💬' : ''}</span>
     <span class="sc">${esc(s.classTitle || '수업 없음')}</span>
     <span class="stime">${esc(timeHHMM(s.createdAt))}</span>
     <span class="sview">코드 보기</span>
@@ -178,7 +178,7 @@ export function submissionsPage(all) {
   return layout({ title: '학생 코드 제출 · 관리자', body, variant: 'admin' });
 }
 
-export function submissionPage(s) {
+export function submissionPage(s, error = '') {
   const body = `
 <section class="card hero">
   <h1>${esc(s.studentName)}</h1>
@@ -187,6 +187,20 @@ export function submissionPage(s) {
 
 <h2 class="pagetitle">학생 코드</h2>
 ${codeBlock(s.code, { copyLabel: '학생 코드 복사', id: 'subcode' })}
+
+<section class="card">
+  <h2>학생에게 답변 남기기</h2>
+  ${error ? `<p class="error">${esc(error)}</p>` : ''}
+  ${
+    s.feedback
+      ? `<p class="dim">${esc(timeHHMM(s.feedbackAt))} 에 보낸 답변입니다. 고쳐서 다시 보낼 수 있어요.</p>`
+      : `<p class="dim">답변을 보내면 학생 화면에 바로 나타나고, 확인 완료로 함께 넘어갑니다.</p>`
+  }
+  <form method="post" action="/admin/submissions/${s.id}/feedback">
+    <textarea name="feedback" rows="6" maxlength="2000" placeholder="14번째 줄 세미콜론이 빠졌어요. 고쳐서 다시 올려보세요.">${esc(s.feedback || '')}</textarea>
+    <button class="big primary" type="submit">💬 답변 보내기</button>
+  </form>
+</section>
 
 <section class="card actions">
   <button type="button" class="big ghost" data-copy-target="#subcode">📋 학생 코드 복사</button>

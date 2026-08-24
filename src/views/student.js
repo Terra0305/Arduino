@@ -1,4 +1,4 @@
-import { esc, dateShort } from '../http.js';
+import { esc, dateShort, timeHHMM } from '../http.js';
 import { highlight } from '../highlight.js';
 import { layout } from './layout.js';
 
@@ -83,6 +83,7 @@ ${wiring(cls)}
 
 <section class="card">
   <a class="big warn" href="/help?classId=${cls.id}">🙋 선생님, 안 돼요</a>
+  <div id="myanswer"></div>
 </section>
 
 ${showPastLink ? `<p class="foot"><a href="/classes">지난 수업 보기</a></p>` : `<p class="foot"><a href="/">오늘의 수업으로 돌아가기</a></p>`}
@@ -152,15 +153,49 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
   return layout({ title: '선생님, 안 돼요', body });
 }
 
-export function helpDonePage(studentName) {
+export function helpDonePage(studentName, token) {
   const body = `
-<section class="card hero done">
+<section class="card hero done" data-my-token="${esc(token)}">
   <h1>✅ 선생님에게 보냈어요!</h1>
   <p class="lead">${esc(studentName)} 학생, 선생님이 확인할 거예요. 잠깐 기다려주세요.</p>
-  <a class="big ghost" href="/">돌아가기</a>
+  <a class="big primary" href="/my/${esc(token)}">💬 선생님 답변 확인하기</a>
+  <a class="big ghost" href="/">수업으로 돌아가기</a>
 </section>
 `;
   return layout({ title: '보냈어요', body });
+}
+
+/** 학생이 자기 제출과 선생님 답변을 보는 화면. */
+export function mySubmissionPage(sub) {
+  const answered = Boolean(sub.feedback);
+  const body = `
+<section class="card hero" data-my-token="${esc(sub.token)}">
+  <p class="eyebrow">내가 보낸 질문</p>
+  <h1>${esc(sub.studentName)} 학생</h1>
+  <p class="lead">${esc(sub.classTitle || '수업')} · ${esc(timeHHMM(sub.createdAt))} 에 보냈어요</p>
+</section>
+
+<section class="card">
+  <h2>선생님 답변</h2>
+  ${
+    answered
+      ? `<div class="feedback">${esc(sub.feedback)}</div>
+         <p class="dim">${esc(timeHHMM(sub.feedbackAt))} 에 도착했어요.</p>`
+      : `<p class="empty">아직 답변이 없어요. 이 화면을 열어두면 답변이 오는 대로 나와요.</p>`
+  }
+</section>
+
+<h2 class="pagetitle">내가 보낸 코드</h2>
+${codeBlock(sub.code, { copyLabel: '내 코드 복사', id: 'mycode' })}
+
+<p class="foot"><a href="/">수업으로 돌아가기</a></p>
+`;
+  return layout({
+    title: answered ? '선생님 답변' : '답변 기다리는 중',
+    body,
+    // 답변이 오면 자동으로 화면에 나타나게 한다.
+    scripts: answered ? '' : `<script>setTimeout(function(){location.reload()},15000)</script>`,
+  });
 }
 
 export function errorPage(message) {

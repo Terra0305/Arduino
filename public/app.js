@@ -153,6 +153,30 @@
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  /* ------------------------------------------------ 내 질문 답변 보기 */
+
+  var TOKEN_KEY = 'arduinoClass.myToken';
+
+  // 제출 완료 화면과 답변 화면에서 내 열쇠를 기억해 둔다.
+  var tokenHolder = document.querySelector('[data-my-token]');
+  if (tokenHolder) {
+    try { window.localStorage.setItem(TOKEN_KEY, tokenHolder.getAttribute('data-my-token')); } catch (e) {}
+  }
+
+  // 수업 화면에 "내 질문 답변 보기" 버튼을 붙인다 (보낸 적이 있을 때만).
+  var answerSlot = document.getElementById('myanswer');
+  if (answerSlot) {
+    var myToken = '';
+    try { myToken = window.localStorage.getItem(TOKEN_KEY) || ''; } catch (e) {}
+    if (/^[0-9a-f]{24}$/.test(myToken)) {
+      var link = document.createElement('a');
+      link.className = 'big ghost';
+      link.href = '/my/' + myToken;
+      link.textContent = '💬 내 질문 답변 보기';
+      answerSlot.appendChild(link);
+    }
+  }
+
   /* ------------------------------------------------ 연결 그림 업로드 (관리자) */
 
   var fileInput = document.getElementById('wiringFile');

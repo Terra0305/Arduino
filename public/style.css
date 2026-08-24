@@ -189,6 +189,12 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
 .foot { text-align: center; margin: 26px 0; }
 .foot a { color: var(--dim); font-size: 17px; }
 
+/* ---- 선생님 답변 ---- */
+.feedback {
+  background: #eef6ff; border: 2px solid #b9d7ff; border-radius: 12px;
+  padding: 20px 22px; font-size: 21px; line-height: 1.7; white-space: pre-wrap;
+}
+
 /* ---- 관리자 ---- */
 .login { max-width: 460px; margin: 40px auto; }
 .login label { display: block; text-align: left; font-weight: 700; margin: 18px 0 8px; }

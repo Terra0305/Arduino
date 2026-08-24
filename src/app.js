@@ -12,6 +12,7 @@ import * as admin from './views/admin.js';
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MAX_CODE_LENGTH = 200_000;
 const MAX_NAME_LENGTH = 20;
+const MAX_FEEDBACK_LENGTH = 2000;
 
 const STATIC_TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
 
@@ -76,8 +77,16 @@ async function handleStudent(req, res, url) {
     if (!code.trim()) return fail('코드를 먼저 붙여넣어 주세요!');
     if (code.length > MAX_CODE_LENGTH) return fail('코드가 너무 길어요. 필요한 부분만 붙여넣어 주세요.');
 
-    await store.createSubmission({ classId: cls ? cls.id : null, studentName, code });
-    return html(res, student.helpDonePage(studentName));
+    const { token } = await store.createSubmission({ classId: cls ? cls.id : null, studentName, code });
+    return html(res, student.helpDonePage(studentName, token));
+  }
+
+  // 학생이 자기 제출과 선생님 답변을 보는 주소. 열쇠를 모르면 열리지 않는다.
+  const myMatch = pathname.match(/^\/my\/([0-9a-f]{24})$/);
+  if (myMatch && req.method === 'GET') {
+    const sub = await store.getSubmissionByToken(myMatch[1]);
+    if (!sub) return notFound(res);
+    return html(res, student.mySubmissionPage(sub));
   }
 
   return notFound(res);
@@ -195,6 +204,20 @@ async function handleAdmin(req, res, url) {
     const sub = await store.getSubmission(Number(subMatch[1]));
     if (!sub) return notFound(res);
     return html(res, admin.submissionPage(sub));
+  }
+
+  const feedbackMatch = pathname.match(/^\/admin\/submissions\/(\d+)\/feedback$/);
+  if (feedbackMatch && req.method === 'POST') {
+    const id = Number(feedbackMatch[1]);
+    const form = await readForm(req);
+    const feedback = (form.get('feedback') || '').trim().slice(0, MAX_FEEDBACK_LENGTH);
+    const sub = await store.getSubmission(id);
+    if (!sub) return notFound(res);
+    if (!feedback) {
+      return html(res, admin.submissionPage(sub, '학생에게 남길 말을 적어주세요.'), 400);
+    }
+    await store.saveFeedback(id, feedback);
+    return redirect(res, '/admin');
   }
 
   const statusMatch = pathname.match(/^\/admin\/submissions\/(\d+)\/(done|waiting)$/);

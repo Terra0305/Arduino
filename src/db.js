@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
 
 /**
@@ -70,6 +71,9 @@ async function initialize() {
       student_name TEXT NOT NULL,
       code         TEXT NOT NULL,
       status       TEXT NOT NULL DEFAULT 'WAITING',
+      token        TEXT,
+      feedback     TEXT NOT NULL DEFAULT '',
+      feedback_at  TIMESTAMPTZ,
       created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
   // 자리 번호로 쓰던 칸을 학생 이름으로 바꾼다 (이미 쌓인 제출도 그대로 남는다).
@@ -79,7 +83,19 @@ async function initialize() {
   if (columns.includes('seat_number') && !columns.includes('student_name')) {
     await sql`ALTER TABLE submissions RENAME COLUMN seat_number TO student_name`;
   }
+  // 선생님 답변 기능을 위해 나중에 추가된 칸들 (이미 있으면 그냥 넘어간다).
+  await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS token TEXT`;
+  await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ`;
+
+  // 예전에 들어온 제출에도 학생이 답변을 확인할 주소를 만들어 준다.
+  const needToken = await sql`SELECT id FROM submissions WHERE token IS NULL`;
+  for (const row of needToken) {
+    await sql`UPDATE submissions SET token = ${newToken()} WHERE id = ${row.id}`;
+  }
+
   await sql`CREATE INDEX IF NOT EXISTS idx_submissions_created ON submissions (created_at DESC)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_token ON submissions (token)`;
   await seedIfEmpty();
 }
 
@@ -160,31 +176,49 @@ export async function deleteClass(id) {
   await sql`DELETE FROM classes WHERE id = ${id}`;
 }
 
+/** 학생이 자기 답변만 볼 수 있도록 추측할 수 없는 열쇠를 만든다. */
+function newToken() {
+  return randomBytes(12).toString('hex');
+}
+
+const SUBMISSION_SELECT = `
+  SELECT s.id, s.token, s.student_name AS "studentName", s.code, s.status,
+         s.feedback, s.feedback_at AS "feedbackAt",
+         s.created_at AS "createdAt", c.title AS "classTitle"
+    FROM submissions s
+    LEFT JOIN classes c ON c.id = s.class_id`;
+
 export async function createSubmission({ classId, studentName, code }) {
+  const token = newToken();
   const rows = await sql`
-    INSERT INTO submissions (class_id, student_name, code)
-    VALUES (${classId}, ${studentName}, ${code})
+    INSERT INTO submissions (class_id, student_name, code, token)
+    VALUES (${classId}, ${studentName}, ${code}, ${token})
     RETURNING id`;
-  return rows[0].id;
+  return { id: rows[0].id, token };
 }
 
 export async function listSubmissions() {
-  return await sql`
-    SELECT s.id, s.student_name AS "studentName", s.code, s.status,
-           s.created_at AS "createdAt", c.title AS "classTitle"
-      FROM submissions s
-      LEFT JOIN classes c ON c.id = s.class_id
-     ORDER BY s.created_at DESC`;
+  return await sql.query(`${SUBMISSION_SELECT} ORDER BY s.created_at DESC`);
 }
 
 export async function getSubmission(id) {
-  const rows = await sql`
-    SELECT s.id, s.student_name AS "studentName", s.code, s.status,
-           s.created_at AS "createdAt", c.title AS "classTitle"
-      FROM submissions s
-      LEFT JOIN classes c ON c.id = s.class_id
-     WHERE s.id = ${id}`;
+  const rows = await sql.query(`${SUBMISSION_SELECT} WHERE s.id = $1`, [id]);
   return rows[0] || null;
+}
+
+export async function getSubmissionByToken(token) {
+  const rows = await sql.query(`${SUBMISSION_SELECT} WHERE s.token = $1`, [token]);
+  return rows[0] || null;
+}
+
+/** 선생님이 답변을 남기면 확인 완료로 함께 넘긴다. */
+export async function saveFeedback(id, feedback) {
+  await sql`
+    UPDATE submissions
+       SET feedback = ${feedback},
+           feedback_at = now(),
+           status = 'DONE'
+     WHERE id = ${id}`;
 }
 
 export async function setSubmissionStatus(id, status) {
