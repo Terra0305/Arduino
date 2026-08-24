@@ -228,9 +228,13 @@ export async function handleRequest(req, res) {
         Connection: 'close',
       });
     }
-    if (err?.message === 'NO_DATABASE') {
-      console.error('DATABASE_URL 환경변수가 없습니다. Vercel 의 Storage 에서 Postgres 를 연결하세요.');
-      return html(res, student.setupPage(), 503);
+    if (err?.message === 'NO_DATABASE' || err?.message === 'BAD_DATABASE_URL') {
+      console.error(
+        err.message === 'NO_DATABASE'
+          ? 'Postgres 접속 주소를 찾을 수 없습니다. Vercel 의 Storage 에서 DB 를 연결하세요.'
+          : 'Postgres 접속 주소의 형식이 올바르지 않습니다 (postgresql://사용자:비밀번호@호스트/DB 형태).',
+      );
+      return html(res, student.setupPage(err.message === 'BAD_DATABASE_URL'), 503);
     }
     console.error(err);
     if (!res.headersSent) html(res, student.errorPage('문제가 생겼어요. 잠시 후 다시 시도해 주세요.'), 500);

@@ -1,11 +1,37 @@
 import { neon } from '@neondatabase/serverless';
 
-const CONNECTION_STRING =
-  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
+/**
+ * Postgres 접속 주소를 찾는다.
+ * Vercel 에서 DB 를 연결할 때 붙이는 이름(prefix)이 사람마다 달라지므로,
+ * 정해진 이름부터 보고 없으면 postgres 주소처럼 생긴 환경변수를 찾아 쓴다.
+ */
+function findConnectionString() {
+  const named = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.STORAGE_URL;
+  if (named) return named;
 
-// 여기서 예외를 던지면 함수가 시작조차 못 해서 원인을 알 수 없는 오류 화면이 나온다.
-// 접속문자열이 없다는 사실은 ready() 에서 알려준다.
-const sql = CONNECTION_STRING ? neon(CONNECTION_STRING) : null;
+  const looksLikePostgres = /^postgres(ql)?:\/\//;
+  const candidates = Object.entries(process.env)
+    .filter(([, value]) => value && looksLikePostgres.test(value))
+    // 서버리스에서는 연결을 모아 쓰는(pooled) 주소가 유리하다.
+    .sort(([a], [b]) => Number(/UNPOOLED|NON_POOLING/i.test(a)) - Number(/UNPOOLED|NON_POOLING/i.test(b)));
+
+  return candidates.length ? candidates[0][1] : null;
+}
+
+const CONNECTION_STRING = findConnectionString();
+
+// 여기서 예외가 새어나가면 함수가 시작조차 못 해서 원인을 알 수 없는 오류 화면이 나온다.
+// 주소가 없거나 형식이 틀렸다는 사실은 ready() 에서 알려준다.
+let sql = null;
+let badConnectionString = false;
+
+if (CONNECTION_STRING) {
+  try {
+    sql = neon(CONNECTION_STRING);
+  } catch {
+    badConnectionString = true;
+  }
+}
 
 /* 서버가 첫 요청을 받을 때 한 번만 테이블을 만든다. */
 let readyPromise = null;
@@ -22,7 +48,7 @@ export function ready() {
 }
 
 async function initialize() {
-  if (!sql) throw new Error('NO_DATABASE');
+  if (!sql) throw new Error(badConnectionString ? 'BAD_DATABASE_URL' : 'NO_DATABASE');
   await sql`
     CREATE TABLE IF NOT EXISTS classes (
       id                 SERIAL PRIMARY KEY,

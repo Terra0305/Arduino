@@ -176,7 +176,7 @@ export function errorPage(message) {
 }
 
 /** 아직 데이터베이스를 연결하지 않았을 때 (배포 직후 한 번만 보게 된다). */
-export function setupPage() {
+export function setupPage(badUrl = false) {
   const body = `
 <section class="card hero">
   <p class="eyebrow">준비 중</p>
@@ -185,11 +185,16 @@ export function setupPage() {
 </section>
 <section class="card">
   <h2>선생님께</h2>
-  <p>데이터베이스가 아직 연결되지 않았습니다. Vercel에서 두 가지만 하면 됩니다.</p>
-  <ol class="steps">
-    <li><span class="stepicon">1️⃣</span><span><b>Storage → Create Database → Neon (Postgres) → Connect</b></span></li>
-    <li><span class="stepicon">2️⃣</span><span><b>Deployments → 맨 위 항목 → ⋯ → Redeploy</b> <span class="dim">(환경변수는 다시 배포해야 반영됩니다)</span></span></li>
-  </ol>
+  ${
+    badUrl
+      ? `<p>DB 주소를 찾았지만 형식이 올바르지 않습니다. <code>postgresql://사용자:비밀번호@호스트/DB</code> 형태여야 합니다.
+           Vercel의 <b>Settings → Environment Variables</b> 에서 값을 확인해 주세요.</p>`
+      : `<p>데이터베이스가 아직 연결되지 않았습니다. Vercel에서 두 가지만 하면 됩니다.</p>
+         <ol class="steps">
+           <li><span class="stepicon">1️⃣</span><span><b>Storage → Create Database → Neon (Postgres) → Connect</b></span></li>
+           <li><span class="stepicon">2️⃣</span><span><b>Deployments → 맨 위 항목 → ⋯ → Redeploy</b> <span class="dim">(환경변수는 다시 배포해야 반영됩니다)</span></span></li>
+         </ol>`
+  }
 </section>`;
   return layout({ title: '준비 중 · 아두이노 수업', body });
 }
