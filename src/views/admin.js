@@ -16,7 +16,7 @@ export function loginPage(error = '') {
   return layout({ title: '관리자', body, variant: 'admin' });
 }
 
-function submissionRow(s, { dim = false } = {}) {
+function submissionRow(s, { dim = false, returnTo = '/admin' } = {}) {
   return `<li class="${dim ? 'dimmed' : ''}">
   <a href="/admin/submissions/${s.id}">
     <span class="st">${dim ? '✅' : '🔴'} ${esc(s.studentName)}${s.feedback ? ' 💬' : ''}</span>
@@ -24,6 +24,10 @@ function submissionRow(s, { dim = false } = {}) {
     <span class="stime">${esc(timeHHMM(s.createdAt))}</span>
     <span class="sview">코드 보기</span>
   </a>
+  <form class="subdelete" method="post" action="/admin/submissions/${s.id}/delete" data-confirm="${esc(s.studentName)} 학생의 질문과 선생님 답변을 모두 삭제할까요?">
+    <input type="hidden" name="returnTo" value="${esc(returnTo)}">
+    <button class="btn danger" type="submit" aria-label="${esc(s.studentName)} 학생 질문과 답변 삭제">삭제</button>
+  </form>
 </li>`;
 }
 
@@ -164,11 +168,11 @@ export function submissionsPage(all) {
 <h1 class="pagetitle">학생 코드 제출</h1>
 <section class="card">
   <h2>확인 필요 <span class="count">${waiting.length}</span></h2>
-  ${waiting.length ? `<ul class="sublist">${waiting.map((s) => submissionRow(s)).join('\n')}</ul>` : `<p class="empty">없어요.</p>`}
+  ${waiting.length ? `<ul class="sublist">${waiting.map((s) => submissionRow(s, { returnTo: '/admin/submissions' })).join('\n')}</ul>` : `<p class="empty">없어요.</p>`}
 </section>
 <section class="card">
   <h2>확인 완료</h2>
-  ${done.length ? `<ul class="sublist">${done.map((s) => submissionRow(s, { dim: true })).join('\n')}</ul>` : `<p class="empty">없어요.</p>`}
+  ${done.length ? `<ul class="sublist">${done.map((s) => submissionRow(s, { dim: true, returnTo: '/admin/submissions' })).join('\n')}</ul>` : `<p class="empty">없어요.</p>`}
 </section>
 `;
   return layout({ title: '학생 코드 제출 · 관리자', body, variant: 'admin' });
@@ -205,7 +209,7 @@ ${codeBlock(s.code, { copyLabel: '학생 코드 복사', id: 'subcode' })}
       ? `<form method="post" action="/admin/submissions/${s.id}/done"><button class="big primary" type="submit">✅ 확인 완료</button></form>`
       : `<form method="post" action="/admin/submissions/${s.id}/waiting"><button class="big ghost" type="submit">다시 확인 필요로</button></form>`
   }
-  <form method="post" action="/admin/submissions/${s.id}/delete" data-confirm="이 제출을 삭제할까요?"><button class="big danger" type="submit">삭제</button></form>
+  <form method="post" action="/admin/submissions/${s.id}/delete" data-confirm="${esc(s.studentName)} 학생의 질문과 선생님 답변을 모두 삭제할까요?"><button class="big danger" type="submit">질문과 답변 삭제</button></form>
 </section>
 <p class="foot"><a href="/admin">관리자 메인으로</a></p>
 `;

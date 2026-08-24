@@ -246,8 +246,9 @@ async function handleAdmin(req, res, url) {
 
   const deleteSubMatch = pathname.match(/^\/admin\/submissions\/(\d+)\/delete$/);
   if (deleteSubMatch && req.method === 'POST') {
+    const form = await readForm(req);
     await store.deleteSubmission(Number(deleteSubMatch[1]));
-    return redirect(res, '/admin');
+    return redirect(res, form.get('returnTo') === '/admin/submissions' ? '/admin/submissions' : '/admin');
   }
 
   return notFound(res);
