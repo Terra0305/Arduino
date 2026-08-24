@@ -92,9 +92,27 @@ async function handleStudent(req, res, url) {
   if (statusMatch && req.method === 'GET') {
     const sub = await store.getSubmissionByToken(statusMatch[1]);
     if (!sub) return send(res, 404, '{}', { 'Content-Type': 'application/json' });
-    return send(res, 200, JSON.stringify({ answered: Boolean(sub.feedback) }), {
+    return send(res, 200, JSON.stringify({ answered: Boolean(sub.feedback), createdAt: sub.createdAt }), {
       'Content-Type': 'application/json',
     });
+  }
+
+  // 브라우저가 기억한 여러 질문을 한 화면에 모을 때 쓰는 카드.
+  const cardMatch = pathname.match(/^\/my\/([0-9a-f]{24})\/card$/);
+  if (cardMatch && req.method === 'GET') {
+    const sub = await store.getSubmissionByToken(cardMatch[1]);
+    if (!sub) return send(res, 404, '{}', { 'Content-Type': 'application/json' });
+    return send(
+      res,
+      200,
+      JSON.stringify({
+        token: sub.token,
+        createdAt: sub.createdAt,
+        answered: Boolean(sub.feedback),
+        html: student.myQuestionCard(sub),
+      }),
+      { 'Content-Type': 'application/json' },
+    );
   }
 
   // 학생이 자기 제출과 선생님 답변을 보는 주소. 열쇠를 모르면 열리지 않는다.

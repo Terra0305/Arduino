@@ -206,37 +206,55 @@ ${
   });
 }
 
-/** 학생이 자기 제출과 선생님 답변을 보는 화면. */
-export function mySubmissionPage(sub) {
+/** 학생이 보낸 질문 한 건. 브라우저에서 여러 건을 모아 목록으로 보여준다. */
+export function myQuestionCard(sub) {
   const answered = Boolean(sub.feedback);
-  const body = `
-<section class="card hero" data-my-token="${esc(sub.token)}">
-  <p class="eyebrow">내가 보낸 질문</p>
-  <h1>${esc(sub.studentName)} 학생</h1>
-  <p class="lead">${esc(sub.classTitle || '수업')} · ${esc(timeHHMM(sub.createdAt))} 에 보냈어요</p>
-  ${answered ? '' : '<p class="waitinglive">⏳ 이 화면에서 기다리면 선생님 답변이 자동으로 나타나요.</p>'}
-</section>
+  return `<article class="card questioncard ${answered ? 'answered' : 'waiting'}" data-question-token="${esc(sub.token)}" data-question-state="${answered ? 'answered' : 'waiting'}">
+  <div class="questionhead">
+    <div>
+      <p class="eyebrow qsequence">질문</p>
+      <h2>${esc(sub.classTitle || '수업')}</h2>
+    </div>
+    <span class="questionstatus">${answered ? '💬 답변 완료' : '⏳ 답변 대기'}</span>
+  </div>
+  <p class="questiontime">${esc(dateShort(sub.createdAt))} ${esc(timeHHMM(sub.createdAt))} 에 보냈어요.</p>
 
-<section class="card">
-  <h2>선생님 답변</h2>
+  <section class="questionanswer">
+    <h3>선생님 답변</h3>
   ${
     answered
       ? `<div class="feedback">${esc(sub.feedback)}</div>
          <p class="dim">${esc(timeHHMM(sub.feedbackAt))} 에 도착했어요.</p>`
       : `<p class="empty">아직 답변이 없어요. 이 화면을 열어두면 답변이 오는 대로 나와요.</p>`
   }
+  </section>
+
+  <details class="questioncode">
+    <summary>📎 내가 보낸 코드 보기</summary>
+    ${codeBlock(sub.code, { copyLabel: '내 코드 복사', id: `mycode-${sub.token}` })}
+  </details>
+</article>`;
+}
+
+/** 현재 주소의 질문을 먼저 보여주고, 기억된 다른 질문은 JS가 이 목록에 합쳐 넣는다. */
+export function mySubmissionPage(sub) {
+  const body = `
+<section class="card hero" data-my-token="${esc(sub.token)}">
+  <p class="eyebrow">${esc(sub.studentName)} 학생</p>
+  <h1>내 질문 목록</h1>
+  <p class="lead">질문한 코드와 선생님 답변을 한꺼번에 볼 수 있어요.</p>
+  ${sub.feedback ? '' : '<p class="waitinglive">⏳ 이 화면에서 기다리면 선생님 답변이 자동으로 나타나요.</p>'}
 </section>
 
-<h2 class="pagetitle">내가 보낸 코드</h2>
-${codeBlock(sub.code, { copyLabel: '내 코드 복사', id: 'mycode' })}
+<div id="myquestions" data-my-history data-current-token="${esc(sub.token)}">
+  ${myQuestionCard(sub)}
+</div>
 
 <p class="foot"><a href="/">수업으로 돌아가기</a></p>
 `;
   return layout({
-    title: answered ? '선생님 답변' : '답변 기다리는 중',
+    title: '내 질문 목록',
     body,
-    // 답변이 오면 자동으로 화면에 나타나게 한다.
-    scripts: answered ? '' : `<script>setTimeout(function(){location.reload()},15000)</script>`,
   });
 }
 

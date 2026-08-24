@@ -234,6 +234,30 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
   padding: 20px 22px; font-size: 21px; line-height: 1.7; white-space: pre-wrap;
 }
 
+/* ---- 내 질문 목록 ---- */
+.questioncard { border-left: 5px solid #e0a43a; }
+.questioncard.answered { border-left-color: var(--green); }
+.questionhead {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--line);
+}
+.questionhead h2 { margin: 3px 0 0; }
+.questionstatus {
+  flex: none; padding: 5px 11px; border-radius: 999px; background: #fff1d6;
+  color: #8a4b00; font-size: 15px; font-weight: 800;
+}
+.questioncard.answered .questionstatus { background: #e7f8ee; color: #0d6b3d; }
+.questiontime { margin: 10px 0 16px; color: var(--dim); font-size: 16px; }
+.questionanswer h3 { margin: 0 0 10px; font-size: 20px; }
+.questionanswer .dim { margin: 8px 0 0; }
+.questioncode { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.questioncode summary {
+  color: var(--blue); font-size: 18px; font-weight: 800; cursor: pointer;
+  list-style-position: inside;
+}
+.questioncode[open] summary { margin-bottom: 14px; }
+.questioncode .codebox { margin-bottom: 0; }
+
 /* ---- 관리자 ---- */
 .login { max-width: 460px; margin: 40px auto; }
 .login label { display: block; text-align: left; font-weight: 700; margin: 18px 0 8px; }
@@ -282,6 +306,8 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
   .sublist a { grid-template-columns: 1fr auto; }
   .sublist .sview { display: none; }
   .subdelete .btn { padding-inline: 12px; }
+  .questionhead { display: block; }
+  .questionstatus { display: inline-block; margin-top: 10px; }
 }
 
 /* 관리자 미리보기는 화면을 다 차지하지 않도록 높이를 제한한다 */

@@ -166,7 +166,9 @@
       if (!Array.isArray(list)) list = [];
       var old = window.localStorage.getItem(OLD_TOKEN_KEY);
       if (old && list.indexOf(old) < 0) list.push(old);
-      return list.filter(function (t) { return TOKEN_SHAPE.test(t); });
+      return list.filter(function (t, index) {
+        return TOKEN_SHAPE.test(t) && list.indexOf(t) === index;
+      });
     } catch (e) {
       return [];
     }
@@ -175,9 +177,10 @@
   function rememberToken(token) {
     if (!TOKEN_SHAPE.test(token)) return;
     try {
-      var list = readTokens().filter(function (t) { return t !== token; });
-      list.unshift(token);
-      window.localStorage.setItem(TOKEN_KEY, JSON.stringify(list.slice(0, 5)));
+      var list = readTokens();
+      // 예전 질문을 다시 열어도 최신 질문으로 바뀌지 않는다.
+      if (list.indexOf(token) < 0) list.unshift(token);
+      window.localStorage.setItem(TOKEN_KEY, JSON.stringify(list.slice(0, 20)));
     } catch (e) { /* 저장 못해도 그냥 진행 */ }
   }
 
@@ -187,9 +190,9 @@
 
   var banner = document.getElementById('answerbanner');
   var myTokens = banner ? readTokens() : [];
+  var answerBack = null;
 
   function showBanner(token, answered) {
-    if (banner.getAttribute('data-state') === 'answered') return;
     banner.setAttribute('data-state', answered ? 'answered' : 'waiting');
     banner.className = answered ? 'answerbanner ok' : 'answerbanner';
     banner.textContent = '';
@@ -203,36 +206,77 @@
     banner.appendChild(link);
   }
 
-  function checkAnswer(index) {
-    if (index >= myTokens.length) return;
-    var token = myTokens[index];
-    fetch('/my/' + token + '/status', { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (!data) return;
-        if (data.answered) showBanner(token, true);
-        else {
-          if (index === 0) showBanner(token, false);
-          checkAnswer(index + 1);
-        }
-      })
-      .catch(function () { /* 알림은 없어도 수업 진행에 지장이 없다 */ });
+  function checkAnswers() {
+    Promise.all(myTokens.map(function (token) {
+      return fetch('/my/' + token + '/status', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          return data ? { token: token, answered: data.answered, createdAt: data.createdAt } : null;
+        })
+        .catch(function () { return null; });
+    })).then(function (items) {
+      items = items.filter(Boolean).sort(function (a, b) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      // 예전 답변보다 가장 최근에 보낸 질문 상태를 우선한다.
+      if (items.length) {
+        showBanner(items[0].token, items[0].answered);
+        if (answerBack) answerBack.href = '/my/' + items[0].token;
+      }
+    });
   }
-
-  if (myTokens.length) checkAnswer(0);
 
   // 화면 아래 "선생님, 안 돼요" 옆에도 다시 볼 수 있는 버튼을 둔다.
   var answerSlot = document.getElementById('myanswer');
   if (answerSlot) {
     var recent = readTokens()[0];
     if (recent) {
-      var back = document.createElement('a');
-      back.className = 'big ghost';
-      back.href = '/my/' + recent;
-      back.textContent = '💬 내 질문 답변 보기';
-      answerSlot.appendChild(back);
+      answerBack = document.createElement('a');
+      answerBack.className = 'big ghost';
+      answerBack.href = '/my/' + recent;
+      answerBack.textContent = '💬 내 질문 답변 보기';
+      answerSlot.appendChild(answerBack);
     }
   }
+
+  if (myTokens.length) checkAnswers();
+
+  // 기억된 질문을 최신순으로 모아 코드와 답변을 한 묶음으로 보여준다.
+  var historyBox = document.querySelector('[data-my-history]');
+  var historyTimer = null;
+
+  function loadMyHistory() {
+    if (!historyBox) return;
+    var tokens = readTokens();
+    var current = historyBox.getAttribute('data-current-token');
+    if (TOKEN_SHAPE.test(current) && tokens.indexOf(current) < 0) tokens.unshift(current);
+
+    Promise.all(tokens.map(function (token) {
+      return fetch('/my/' + token + '/card', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    })).then(function (items) {
+      items = items.filter(Boolean).sort(function (a, b) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      if (!items.length) return;
+
+      historyBox.innerHTML = items.map(function (item) { return item.html; }).join('');
+      var labels = historyBox.querySelectorAll('.qsequence');
+      labels.forEach(function (label, index) {
+        label.textContent = String(items.length - index) + '번째 질문';
+      });
+
+      if (historyTimer) window.clearTimeout(historyTimer);
+      if (items.some(function (item) { return !item.answered; })) {
+        historyTimer = window.setTimeout(loadMyHistory, 15000);
+      }
+    }).catch(function () {
+      // 네트워크가 잠깐 끊겨도 서버에서 먼저 그려준 현재 질문은 그대로 남긴다.
+    });
+  }
+
+  if (historyBox) loadMyHistory();
 
   /* ------------------------------------------------ 연결 그림 업로드 (관리자) */
 
