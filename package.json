@@ -1,0 +1,13 @@
+{
+  "name": "arduino-class",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "아두이노 수업용 코드 공유 웹",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
