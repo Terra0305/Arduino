@@ -88,6 +88,12 @@ async function initialize() {
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ`;
 
+  // 첫 배포용 예시 수업에 넣어두었던 기본 공지는 이제 표시하지 않는다.
+  await sql`
+    UPDATE classes
+       SET notice = '', updated_at = now()
+     WHERE notice = '⚠️ 오늘은 Arduino UNO만 사용합니다.'`;
+
   // 예전에 들어온 제출에도 학생이 답변을 확인할 주소를 만들어 준다.
   const needToken = await sql`SELECT id FROM submissions WHERE token IS NULL`;
   for (const row of needToken) {
@@ -269,7 +275,7 @@ void loop() {
     materials: ['Arduino UNO', 'LCD 화면 (I2C)', '점퍼선 4개'],
     wiringDescription: 'LCD GND - Arduino GND\nLCD VCC - Arduino 5V\nLCD SDA - Arduino A4\nLCD SCL - Arduino A5',
     wiringImage: '',
-    notice: '⚠️ 오늘은 Arduino UNO만 사용합니다.',
+    notice: '',
     isCurrent: true,
   });
 }
