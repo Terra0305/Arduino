@@ -11,6 +11,7 @@ import * as admin from './views/admin.js';
 // src/app.js 기준으로 항상 <프로젝트>/public 을 가리킨다 (로컬과 Vercel 모두 동일).
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MAX_CODE_LENGTH = 200_000;
+const MAX_NAME_LENGTH = 20;
 
 const STATIC_TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
 
@@ -66,17 +67,17 @@ async function handleStudent(req, res, url) {
     const classIdRaw = form.get('classId');
     const classId = classIdRaw && /^\d+$/.test(classIdRaw) ? Number(classIdRaw) : null;
     const cls = classId ? await store.getClass(classId) : await store.getCurrentClass();
-    const seatRaw = (form.get('seatNumber') || '').trim();
+    const studentName = (form.get('studentName') || '').trim().replace(/\s+/g, ' ');
     const code = form.get('code') || '';
 
-    const fail = (message) => html(res, student.helpPage({ cls, error: message, code }), 400);
-    if (!/^\d{1,3}$/.test(seatRaw) || Number(seatRaw) < 1) return fail('자리 번호를 입력해 주세요!');
+    const fail = (message) => html(res, student.helpPage({ cls, error: message, code, name: studentName }), 400);
+    if (!studentName) return fail('이름을 입력해 주세요!');
+    if (studentName.length > MAX_NAME_LENGTH) return fail('이름이 너무 길어요.');
     if (!code.trim()) return fail('코드를 먼저 붙여넣어 주세요!');
     if (code.length > MAX_CODE_LENGTH) return fail('코드가 너무 길어요. 필요한 부분만 붙여넣어 주세요.');
 
-    const seatNumber = String(Number(seatRaw));
-    await store.createSubmission({ classId: cls ? cls.id : null, seatNumber, code });
-    return html(res, student.helpDonePage(seatNumber));
+    await store.createSubmission({ classId: cls ? cls.id : null, studentName, code });
+    return html(res, student.helpDonePage(studentName));
   }
 
   return notFound(res);

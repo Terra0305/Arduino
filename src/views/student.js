@@ -124,7 +124,7 @@ ${
   return layout({ title: '지난 수업 · 아두이노 수업', body });
 }
 
-export function helpPage({ cls, error = '', code = '' }) {
+export function helpPage({ cls, error = '', code = '', name = '' }) {
   const body = `
 <section class="card hero">
   <h1>문제가 생겼나요?</h1>
@@ -136,12 +136,9 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
 <form class="card" method="post" action="/help" id="helpform">
   <input type="hidden" name="classId" value="${cls ? cls.id : ''}">
 
-  <h2>1. 자리 번호</h2>
-  <div class="seatrow">
-    <input class="seat" type="number" inputmode="numeric" min="1" max="999" name="seatNumber" id="seat" placeholder="7" autocomplete="off">
-    <span class="seatunit">번</span>
-  </div>
-  <p class="dim seatsaved hidden" id="seatsaved"></p>
+  <h2>1. 이름</h2>
+  <input class="namebox" type="text" name="studentName" id="studentName" value="${esc(name)}" placeholder="홍길동" maxlength="20" autocomplete="off">
+  <p class="dim seatsaved hidden" id="namesaved"></p>
 
   <h2>2. Arduino에 있는 코드를 붙여넣으세요</h2>
   <textarea name="code" id="helpcode" rows="14" spellcheck="false" placeholder="여기를 누르고 Ctrl + V">${esc(code)}</textarea>
@@ -155,11 +152,11 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
   return layout({ title: '선생님, 안 돼요', body });
 }
 
-export function helpDonePage(seatNumber) {
+export function helpDonePage(studentName) {
   const body = `
 <section class="card hero done">
   <h1>✅ 선생님에게 보냈어요!</h1>
-  <p class="lead">${esc(seatNumber)}번 자리에서 기다려주세요.</p>
+  <p class="lead">${esc(studentName)} 학생, 선생님이 확인할 거예요. 잠깐 기다려주세요.</p>
   <a class="big ghost" href="/">돌아가기</a>
 </section>
 `;

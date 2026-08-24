@@ -19,7 +19,7 @@ export function loginPage(error = '') {
 function submissionRow(s, { dim = false } = {}) {
   return `<li class="${dim ? 'dimmed' : ''}">
   <a href="/admin/submissions/${s.id}">
-    <span class="st">${dim ? '✅' : '🔴'} ${esc(s.seatNumber)}번 자리</span>
+    <span class="st">${dim ? '✅' : '🔴'} ${esc(s.studentName)}</span>
     <span class="sc">${esc(s.classTitle || '수업 없음')}</span>
     <span class="stime">${esc(timeHHMM(s.createdAt))}</span>
     <span class="sview">코드 보기</span>
@@ -181,7 +181,7 @@ export function submissionsPage(all) {
 export function submissionPage(s) {
   const body = `
 <section class="card hero">
-  <h1>${esc(s.seatNumber)}번 자리</h1>
+  <h1>${esc(s.studentName)}</h1>
   <p class="lead"><b>수업:</b> ${esc(s.classTitle || '수업 없음')}<br><b>제출 시간:</b> ${esc(dateShort(s.createdAt))} ${esc(timeHHMM(s.createdAt))}</p>
 </section>
 
@@ -199,5 +199,5 @@ ${codeBlock(s.code, { copyLabel: '학생 코드 복사', id: 'subcode' })}
 </section>
 <p class="foot"><a href="/admin">관리자 메인으로</a></p>
 `;
-  return layout({ title: `${s.seatNumber}번 자리 · 관리자`, body, variant: 'admin' });
+  return layout({ title: `${s.studentName} · 관리자`, body, variant: 'admin' });
 }

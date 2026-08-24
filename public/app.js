@@ -87,10 +87,10 @@
     if (message && !window.confirm(message)) event.preventDefault();
   });
 
-  /* ------------------------------------------------ 자리 번호 + 제출 */
+  /* ------------------------------------------------ 학생 이름 + 제출 */
 
-  var SEAT_KEY = 'arduinoClass.seatNumber';
-  var seatInput = document.getElementById('seat');
+  var SEAT_KEY = 'arduinoClass.studentName';
+  var seatInput = document.getElementById('studentName');
   var helpForm = document.getElementById('helpform');
 
   function readSeat() {
@@ -102,16 +102,16 @@
 
   if (seatInput) {
     var saved = readSeat();
-    var savedLine = document.getElementById('seatsaved');
+    var savedLine = document.getElementById('namesaved');
     if (saved && !seatInput.value) {
       seatInput.value = saved;
       if (savedLine) {
         savedLine.classList.remove('hidden');
         savedLine.innerHTML = '';
-        savedLine.appendChild(document.createTextNode(saved + '번 자리로 기억하고 있어요.'));
+        savedLine.appendChild(document.createTextNode(saved + ' 학생으로 기억하고 있어요.'));
         var change = document.createElement('button');
         change.type = 'button';
-        change.textContent = '자리 번호 바꾸기';
+        change.textContent = '이름 바꾸기';
         change.addEventListener('click', function () {
           seatInput.value = '';
           seatInput.focus();
@@ -130,12 +130,12 @@
       var seat = (seatInput.value || '').trim();
       var code = (codeArea.value || '').trim();
       var message = '';
-      if (!seat) message = '자리 번호를 입력해 주세요!';
+      if (!seat) message = '이름을 입력해 주세요!';
       else if (!code) message = '코드를 먼저 붙여넣어 주세요!';
       if (message) {
         event.preventDefault();
         showFormError(helpForm, message);
-        (message.indexOf('자리') === 0 ? seatInput : codeArea).focus();
+        (message.indexOf('이름') === 0 ? seatInput : codeArea).focus();
         return;
       }
       writeSeat(seat);

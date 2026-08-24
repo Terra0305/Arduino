@@ -65,13 +65,20 @@ async function initialize() {
     )`;
   await sql`
     CREATE TABLE IF NOT EXISTS submissions (
-      id          SERIAL PRIMARY KEY,
-      class_id    INTEGER REFERENCES classes(id) ON DELETE SET NULL,
-      seat_number TEXT NOT NULL,
-      code        TEXT NOT NULL,
-      status      TEXT NOT NULL DEFAULT 'WAITING',
-      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      id           SERIAL PRIMARY KEY,
+      class_id     INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      student_name TEXT NOT NULL,
+      code         TEXT NOT NULL,
+      status       TEXT NOT NULL DEFAULT 'WAITING',
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
+  // 자리 번호로 쓰던 칸을 학생 이름으로 바꾼다 (이미 쌓인 제출도 그대로 남는다).
+  const columns = (
+    await sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'submissions'`
+  ).map((row) => row.column_name);
+  if (columns.includes('seat_number') && !columns.includes('student_name')) {
+    await sql`ALTER TABLE submissions RENAME COLUMN seat_number TO student_name`;
+  }
   await sql`CREATE INDEX IF NOT EXISTS idx_submissions_created ON submissions (created_at DESC)`;
   await seedIfEmpty();
 }
@@ -153,17 +160,17 @@ export async function deleteClass(id) {
   await sql`DELETE FROM classes WHERE id = ${id}`;
 }
 
-export async function createSubmission({ classId, seatNumber, code }) {
+export async function createSubmission({ classId, studentName, code }) {
   const rows = await sql`
-    INSERT INTO submissions (class_id, seat_number, code)
-    VALUES (${classId}, ${seatNumber}, ${code})
+    INSERT INTO submissions (class_id, student_name, code)
+    VALUES (${classId}, ${studentName}, ${code})
     RETURNING id`;
   return rows[0].id;
 }
 
 export async function listSubmissions() {
   return await sql`
-    SELECT s.id, s.seat_number AS "seatNumber", s.code, s.status,
+    SELECT s.id, s.student_name AS "studentName", s.code, s.status,
            s.created_at AS "createdAt", c.title AS "classTitle"
       FROM submissions s
       LEFT JOIN classes c ON c.id = s.class_id
@@ -172,7 +179,7 @@ export async function listSubmissions() {
 
 export async function getSubmission(id) {
   const rows = await sql`
-    SELECT s.id, s.seat_number AS "seatNumber", s.code, s.status,
+    SELECT s.id, s.student_name AS "studentName", s.code, s.status,
            s.created_at AS "createdAt", c.title AS "classTitle"
       FROM submissions s
       LEFT JOIN classes c ON c.id = s.class_id

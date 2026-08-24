@@ -162,15 +162,11 @@ body.admin .top { background: #26313f; }
 }
 
 /* ---- 제출 폼 ---- */
-.seatrow { display: flex; align-items: center; gap: 10px; }
-.seatrow .seat {
-  width: 160px; font-size: 32px; font-weight: 800; text-align: center;
-  padding: 12px; border: 2px solid var(--line); border-radius: 12px; font-family: inherit;
-  -moz-appearance: textfield; appearance: textfield;
+.namebox {
+  width: min(320px, 100%); font-size: 28px; font-weight: 700;
+  padding: 12px 16px; border: 2px solid var(--line); border-radius: 12px; font-family: inherit;
+  background: #fbfcfe;
 }
-.seatrow .seat::-webkit-outer-spin-button,
-.seatrow .seat::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.seatunit { font-size: 24px; font-weight: 700; }
 .seatsaved { margin: 10px 0 0; }
 .seatsaved button {
   background: none; border: 0; color: var(--blue); font: inherit; font-size: 16px;
