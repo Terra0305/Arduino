@@ -12,6 +12,7 @@ import * as admin from './views/admin.js';
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const MAX_CODE_LENGTH = 200_000;
 const MAX_NAME_LENGTH = 20;
+const MAX_QUESTION_LENGTH = 500;
 const MAX_FEEDBACK_LENGTH = 2000;
 
 const STATIC_TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
@@ -74,15 +75,24 @@ async function handleStudent(req, res, url) {
     const classId = classIdRaw && /^\d+$/.test(classIdRaw) ? Number(classIdRaw) : null;
     const cls = classId ? await store.getClass(classId) : await store.getCurrentClass();
     const studentName = (form.get('studentName') || '').trim().replace(/\s+/g, ' ');
+    const question = (form.get('question') || '').trim();
     const code = form.get('code') || '';
 
-    const fail = (message) => html(res, student.helpPage({ cls, error: message, code, name: studentName }), 400);
+    const fail = (message) =>
+      html(res, student.helpPage({ cls, error: message, code, name: studentName, question }), 400);
     if (!studentName) return fail('이름을 입력해 주세요!');
     if (studentName.length > MAX_NAME_LENGTH) return fail('이름이 너무 길어요.');
+    if (!question) return fail('어떤 문제가 있는지 짧게 적어 주세요!');
+    if (question.length > MAX_QUESTION_LENGTH) return fail('질문이 너무 길어요. 500자 이내로 적어 주세요.');
     if (!code.trim()) return fail('코드를 먼저 붙여넣어 주세요!');
     if (code.length > MAX_CODE_LENGTH) return fail('코드가 너무 길어요. 필요한 부분만 붙여넣어 주세요.');
 
-    const { token } = await store.createSubmission({ classId: cls ? cls.id : null, studentName, code });
+    const { token } = await store.createSubmission({
+      classId: cls ? cls.id : null,
+      studentName,
+      question,
+      code,
+    });
     // 제출 완료 화면에서 다시 버튼을 누르게 하지 말고, 답변이 자동으로 나타나는 대기 화면으로 바로 보낸다.
     return redirect(res, `/my/${token}`);
   }

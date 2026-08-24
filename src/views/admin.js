@@ -17,10 +17,11 @@ export function loginPage(error = '') {
 }
 
 function submissionRow(s, { dim = false, returnTo = '/admin' } = {}) {
+  const question = s.question?.trim() || '기존 질문 (설명 없음)';
   return `<li class="${dim ? 'dimmed' : ''}">
   <a href="/admin/submissions/${s.id}">
     <span class="st">${dim ? '✅' : '🔴'} ${esc(s.studentName)}${s.feedback ? ' 💬' : ''}</span>
-    <span class="sc">${esc(s.classTitle || '수업 없음')}</span>
+    <span class="sc">${esc(s.classTitle || '수업 없음')} · ${esc(question)}</span>
     <span class="stime">${esc(timeHHMM(s.createdAt))}</span>
     <span class="sview">코드 보기</span>
   </a>
@@ -185,7 +186,12 @@ export function submissionPage(s, error = '') {
   <p class="lead"><b>수업:</b> ${esc(s.classTitle || '수업 없음')}<br><b>제출 시간:</b> ${esc(dateShort(s.createdAt))} ${esc(timeHHMM(s.createdAt))}</p>
 </section>
 
-<h2 class="pagetitle">학생 코드</h2>
+<section class="card studentquestion">
+  <p class="eyebrow">학생 질문 글</p>
+  <div class="questiontext">${esc(s.question?.trim() || '코드가 작동하지 않아 질문을 보냈어요.')}</div>
+</section>
+
+<h2 class="pagetitle">첨부한 학생 코드</h2>
 ${codeBlock(s.code, { copyLabel: '학생 코드 복사', id: 'subcode' })}
 
 <section class="card">

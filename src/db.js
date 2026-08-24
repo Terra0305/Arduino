@@ -69,6 +69,7 @@ async function initialize() {
       id           SERIAL PRIMARY KEY,
       class_id     INTEGER REFERENCES classes(id) ON DELETE SET NULL,
       student_name TEXT NOT NULL,
+      question     TEXT NOT NULL DEFAULT '',
       code         TEXT NOT NULL,
       status       TEXT NOT NULL DEFAULT 'WAITING',
       token        TEXT,
@@ -85,6 +86,7 @@ async function initialize() {
   }
   // 선생님 답변 기능을 위해 나중에 추가된 칸들 (이미 있으면 그냥 넘어간다).
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS token TEXT`;
+  await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS question TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ`;
 
@@ -188,17 +190,17 @@ function newToken() {
 }
 
 const SUBMISSION_SELECT = `
-  SELECT s.id, s.token, s.student_name AS "studentName", s.code, s.status,
+  SELECT s.id, s.token, s.student_name AS "studentName", s.question, s.code, s.status,
          s.feedback, s.feedback_at AS "feedbackAt",
          s.created_at AS "createdAt", c.title AS "classTitle"
     FROM submissions s
     LEFT JOIN classes c ON c.id = s.class_id`;
 
-export async function createSubmission({ classId, studentName, code }) {
+export async function createSubmission({ classId, studentName, question, code }) {
   const token = newToken();
   const rows = await sql`
-    INSERT INTO submissions (class_id, student_name, code, token)
-    VALUES (${classId}, ${studentName}, ${code}, ${token})
+    INSERT INTO submissions (class_id, student_name, question, code, token)
+    VALUES (${classId}, ${studentName}, ${question}, ${code}, ${token})
     RETURNING id`;
   return { id: rows[0].id, token };
 }
@@ -218,7 +220,7 @@ export async function getSubmission(id) {
  */
 export async function listAnswerBoard(limit = 200) {
   return await sql`
-    SELECT s.id, s.student_name AS "studentName", s.status, s.feedback,
+    SELECT s.id, s.student_name AS "studentName", s.question, s.status, s.feedback,
            s.feedback_at AS "feedbackAt", s.created_at AS "createdAt",
            c.title AS "classTitle"
       FROM submissions s

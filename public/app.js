@@ -125,17 +125,20 @@
   }
 
   if (helpForm) {
+    var questionArea = document.getElementById('helpquestion');
     var codeArea = document.getElementById('helpcode');
     helpForm.addEventListener('submit', function (event) {
       var seat = (seatInput.value || '').trim();
+      var question = (questionArea.value || '').trim();
       var code = (codeArea.value || '').trim();
       var message = '';
       if (!seat) message = '이름을 입력해 주세요!';
+      else if (!question) message = '어떤 문제가 있는지 짧게 적어 주세요!';
       else if (!code) message = '코드를 먼저 붙여넣어 주세요!';
       if (message) {
         event.preventDefault();
         showFormError(helpForm, message);
-        (message.indexOf('이름') === 0 ? seatInput : codeArea).focus();
+        (message.indexOf('이름') === 0 ? seatInput : message.indexOf('어떤') === 0 ? questionArea : codeArea).focus();
         return;
       }
       writeSeat(seat);
@@ -153,7 +156,7 @@
     box.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /* ------------------------------------------------ 내 질문 답변 보기 */
+  /* ------------------------------------------------ 내 질문 목록 */
 
   var TOKEN_KEY = 'arduinoClass.myTokens';
   var OLD_TOKEN_KEY = 'arduinoClass.myToken';
@@ -197,11 +200,11 @@
     banner.className = answered ? 'answerbanner ok' : 'answerbanner';
     banner.textContent = '';
     var text = document.createElement('span');
-    text.textContent = answered ? '💬 선생님 답변이 왔어요!' : '🙋 보낸 질문을 선생님이 확인하고 있어요.';
+    text.textContent = answered ? '💬 내 글에 선생님 답변이 달렸어요!' : '📝 질문 글을 선생님이 확인하고 있어요.';
     var link = document.createElement('a');
     link.className = 'btn';
     link.href = '/my/' + token;
-    link.textContent = answered ? '답변 보기' : '내 질문 보기';
+    link.textContent = answered ? '글과 답변 보기' : '내 글 보기';
     banner.appendChild(text);
     banner.appendChild(link);
   }
@@ -234,7 +237,7 @@
       answerBack = document.createElement('a');
       answerBack.className = 'big ghost';
       answerBack.href = '/my/' + recent;
-      answerBack.textContent = '💬 내 질문 답변 보기';
+      answerBack.textContent = '📋 내 질문 목록';
       answerSlot.appendChild(answerBack);
     }
   }

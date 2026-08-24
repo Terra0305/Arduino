@@ -84,7 +84,7 @@ ${wiring(cls)}
 
 <section class="card">
   <a class="big warn" href="/help?classId=${cls.id}">🙋 선생님, 안 돼요</a>
-  <a class="big ghost" href="/answers">💬 선생님 답변 보기</a>
+  <a class="big ghost" href="/answers">📬 질문 게시판</a>
   <div id="myanswer"></div>
 </section>
 
@@ -125,7 +125,7 @@ ${
   return layout({ title: '지난 수업 · 아두이노 수업', body });
 }
 
-export function helpPage({ cls, error = '', code = '', name = '' }) {
+export function helpPage({ cls, error = '', code = '', name = '', question = '' }) {
   const body = `
 <section class="card hero">
   <h1>문제가 생겼나요?</h1>
@@ -141,10 +141,14 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
   <input class="namebox" type="text" name="studentName" id="studentName" value="${esc(name)}" placeholder="홍길동" maxlength="20" autocomplete="off">
   <p class="dim seatsaved hidden" id="namesaved"></p>
 
-  <h2>2. Arduino에 있는 코드를 붙여넣으세요</h2>
+  <h2>2. 어떤 문제가 있나요?</h2>
+  <textarea name="question" id="helpquestion" rows="4" maxlength="500" placeholder="예: LCD 화면에 글자가 안 나와요.">${esc(question)}</textarea>
+  <p class="dim">질문 글은 게시판에 보여요. 전화번호나 개인정보는 적지 마세요.</p>
+
+  <h2>3. Arduino에 있는 코드를 붙여넣으세요</h2>
   <textarea name="code" id="helpcode" rows="14" spellcheck="false" placeholder="여기를 누르고 Ctrl + V">${esc(code)}</textarea>
 
-  <h2>3. 보내기</h2>
+  <h2>4. 게시판에 올리기</h2>
   <button class="big primary" type="submit">선생님에게 보내기</button>
 </form>
 
@@ -158,7 +162,7 @@ export function helpDonePage(studentName, token) {
 <section class="card hero done" data-my-token="${esc(token)}">
   <h1>✅ 선생님에게 보냈어요!</h1>
   <p class="lead">${esc(studentName)} 학생, 선생님이 확인할 거예요. 잠깐 기다려주세요.</p>
-  <a class="big primary" href="/my/${esc(token)}">💬 선생님 답변 확인하기</a>
+  <a class="big primary" href="/my/${esc(token)}">📋 내 질문 목록 보기</a>
   <a class="big ghost" href="/">수업으로 돌아가기</a>
 </section>
 `;
@@ -170,25 +174,29 @@ export function answersPage(list) {
   const rows = list
     .map((s) => {
       const answered = Boolean(s.feedback);
+      const question = s.question?.trim() || '코드가 작동하지 않아 질문을 보냈어요.';
       return `<li class="${answered ? 'answered' : 'waiting'}">
   <div class="ahead">
-    <span class="aname">${answered ? '💬' : '🙋'} ${esc(s.studentName)}</span>
+    <span class="aname">📝 ${esc(s.studentName)} 학생의 글</span>
     <span class="atime">${esc(dateShort(s.createdAt))} ${esc(timeHHMM(s.createdAt))}</span>
   </div>
-  ${
-    answered
-      ? `<div class="feedback">${esc(s.feedback)}</div>`
-      : `<p class="dim">선생님이 확인하고 있어요.</p>`
-  }
+  <div class="questionpost">
+    <p class="boardlabel">학생 질문</p>
+    <div class="questiontext">${esc(question)}</div>
+  </div>
+  <div class="teacherpost">
+    <p class="boardlabel">선생님 답변</p>
+    ${answered ? `<div class="feedback">${esc(s.feedback)}</div>` : `<p class="empty">선생님이 확인하고 있어요.</p>`}
+  </div>
 </li>`;
     })
     .join('\n');
 
   const body = `
 <section class="card hero">
-  <p class="eyebrow">선생님 답변</p>
-  <h1>선생님이 뭐라고 했나요?</h1>
-  <p class="lead">보낸 질문과 선생님 답변이 여기에 모여요. 답변이 오면 저절로 나타나요.</p>
+  <p class="eyebrow">우리 반</p>
+  <h1>📬 질문 게시판</h1>
+  <p class="lead">학생이 쓴 질문 글과 선생님의 답변을 함께 볼 수 있어요.</p>
 </section>
 
 ${
@@ -200,7 +208,7 @@ ${
 <p class="foot"><a href="/">수업으로 돌아가기</a></p>
 `;
   return layout({
-    title: '선생님 답변 · 아두이노 수업',
+    title: '질문 게시판 · 아두이노 수업',
     body,
     scripts: `<script>setTimeout(function(){location.reload()},15000)</script>`,
   });
@@ -209,6 +217,7 @@ ${
 /** 학생이 보낸 질문 한 건. 브라우저에서 여러 건을 모아 목록으로 보여준다. */
 export function myQuestionCard(sub) {
   const answered = Boolean(sub.feedback);
+  const question = sub.question?.trim() || '코드가 작동하지 않아 질문을 보냈어요.';
   return `<article class="card questioncard ${answered ? 'answered' : 'waiting'}" data-question-token="${esc(sub.token)}" data-question-state="${answered ? 'answered' : 'waiting'}">
   <div class="questionhead">
     <div>
@@ -218,6 +227,11 @@ export function myQuestionCard(sub) {
     <span class="questionstatus">${answered ? '💬 답변 완료' : '⏳ 답변 대기'}</span>
   </div>
   <p class="questiontime">${esc(dateShort(sub.createdAt))} ${esc(timeHHMM(sub.createdAt))} 에 보냈어요.</p>
+
+  <section class="myquestionpost">
+    <h3>내가 쓴 질문</h3>
+    <div class="questiontext">${esc(question)}</div>
+  </section>
 
   <section class="questionanswer">
     <h3>선생님 답변</h3>
