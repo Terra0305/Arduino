@@ -155,25 +155,82 @@
 
   /* ------------------------------------------------ 내 질문 답변 보기 */
 
-  var TOKEN_KEY = 'arduinoClass.myToken';
+  var TOKEN_KEY = 'arduinoClass.myTokens';
+  var OLD_TOKEN_KEY = 'arduinoClass.myToken';
+  var TOKEN_SHAPE = /^[0-9a-f]{24}$/;
+
+  function readTokens() {
+    try {
+      var raw = window.localStorage.getItem(TOKEN_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(list)) list = [];
+      var old = window.localStorage.getItem(OLD_TOKEN_KEY);
+      if (old && list.indexOf(old) < 0) list.push(old);
+      return list.filter(function (t) { return TOKEN_SHAPE.test(t); });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function rememberToken(token) {
+    if (!TOKEN_SHAPE.test(token)) return;
+    try {
+      var list = readTokens().filter(function (t) { return t !== token; });
+      list.unshift(token);
+      window.localStorage.setItem(TOKEN_KEY, JSON.stringify(list.slice(0, 5)));
+    } catch (e) { /* 저장 못해도 그냥 진행 */ }
+  }
 
   // 제출 완료 화면과 답변 화면에서 내 열쇠를 기억해 둔다.
   var tokenHolder = document.querySelector('[data-my-token]');
-  if (tokenHolder) {
-    try { window.localStorage.setItem(TOKEN_KEY, tokenHolder.getAttribute('data-my-token')); } catch (e) {}
+  if (tokenHolder) rememberToken(tokenHolder.getAttribute('data-my-token'));
+
+  var banner = document.getElementById('answerbanner');
+  var myTokens = banner ? readTokens() : [];
+
+  function showBanner(token, answered) {
+    if (banner.getAttribute('data-state') === 'answered') return;
+    banner.setAttribute('data-state', answered ? 'answered' : 'waiting');
+    banner.className = answered ? 'answerbanner ok' : 'answerbanner';
+    banner.textContent = '';
+    var text = document.createElement('span');
+    text.textContent = answered ? '💬 선생님 답변이 왔어요!' : '🙋 보낸 질문을 선생님이 확인하고 있어요.';
+    var link = document.createElement('a');
+    link.className = 'btn';
+    link.href = '/my/' + token;
+    link.textContent = answered ? '답변 보기' : '내 질문 보기';
+    banner.appendChild(text);
+    banner.appendChild(link);
   }
 
-  // 수업 화면에 "내 질문 답변 보기" 버튼을 붙인다 (보낸 적이 있을 때만).
+  function checkAnswer(index) {
+    if (index >= myTokens.length) return;
+    var token = myTokens[index];
+    fetch('/my/' + token + '/status', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        if (data.answered) showBanner(token, true);
+        else {
+          if (index === 0) showBanner(token, false);
+          checkAnswer(index + 1);
+        }
+      })
+      .catch(function () { /* 알림은 없어도 수업 진행에 지장이 없다 */ });
+  }
+
+  if (myTokens.length) checkAnswer(0);
+
+  // 화면 아래 "선생님, 안 돼요" 옆에도 다시 볼 수 있는 버튼을 둔다.
   var answerSlot = document.getElementById('myanswer');
   if (answerSlot) {
-    var myToken = '';
-    try { myToken = window.localStorage.getItem(TOKEN_KEY) || ''; } catch (e) {}
-    if (/^[0-9a-f]{24}$/.test(myToken)) {
-      var link = document.createElement('a');
-      link.className = 'big ghost';
-      link.href = '/my/' + myToken;
-      link.textContent = '💬 내 질문 답변 보기';
-      answerSlot.appendChild(link);
+    var recent = readTokens()[0];
+    if (recent) {
+      var back = document.createElement('a');
+      back.className = 'big ghost';
+      back.href = '/my/' + recent;
+      back.textContent = '💬 내 질문 답변 보기';
+      answerSlot.appendChild(back);
     }
   }
 

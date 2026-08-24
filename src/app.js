@@ -81,6 +81,16 @@ async function handleStudent(req, res, url) {
     return html(res, student.helpDonePage(studentName, token));
   }
 
+  // 수업 화면 맨 위 알림이 답변 도착 여부만 물어보는 주소.
+  const statusMatch = pathname.match(/^\/my\/([0-9a-f]{24})\/status$/);
+  if (statusMatch && req.method === 'GET') {
+    const sub = await store.getSubmissionByToken(statusMatch[1]);
+    if (!sub) return send(res, 404, '{}', { 'Content-Type': 'application/json' });
+    return send(res, 200, JSON.stringify({ answered: Boolean(sub.feedback) }), {
+      'Content-Type': 'application/json',
+    });
+  }
+
   // 학생이 자기 제출과 선생님 답변을 보는 주소. 열쇠를 모르면 열리지 않는다.
   const myMatch = pathname.match(/^\/my\/([0-9a-f]{24})$/);
   if (myMatch && req.method === 'GET') {

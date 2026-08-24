@@ -60,6 +60,7 @@ function wiring(cls) {
 
 export function classPage(cls, { label = '오늘의 수업', showPastLink = true } = {}) {
   const body = `
+<div id="answerbanner"></div>
 ${notice(cls)}
 <section class="card hero">
   <p class="eyebrow">${esc(label)}</p>

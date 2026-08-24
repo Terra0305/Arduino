@@ -189,6 +189,22 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
 .foot { text-align: center; margin: 26px 0; }
 .foot a { color: var(--dim); font-size: 17px; }
 
+/* ---- 답변 알림 ---- */
+.answerbanner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: #eef6ff; border: 2px solid #7fb4ff; border-radius: var(--radius);
+  padding: 18px 22px; margin-bottom: 20px; font-size: 20px; font-weight: 700;
+}
+.answerbanner.ok {
+  background: #e7f8ee; border-color: #4fbb7f; color: #0d6b3d;
+  animation: answerpop .4s ease;
+}
+.answerbanner .btn { flex: none; }
+@keyframes answerpop {
+  from { transform: scale(.96); opacity: .4; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
 /* ---- 선생님 답변 ---- */
 .feedback {
   background: #eef6ff; border: 2px solid #b9d7ff; border-radius: 12px;
