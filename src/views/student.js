@@ -58,7 +58,7 @@ function wiring(cls) {
 </section>`;
 }
 
-export function classPage(cls, { label = '오늘의 수업', showPastLink = true } = {}) {
+export function classPage(cls, { label = '오늘의 수업' } = {}) {
   const body = `
 <div id="answerbanner"></div>
 ${notice(cls)}
@@ -88,7 +88,6 @@ ${wiring(cls)}
   <div id="myanswer"></div>
 </section>
 
-${showPastLink ? `<p class="foot"><a href="/classes">지난 수업 보기</a></p>` : `<p class="foot"><a href="/">오늘의 수업으로 돌아가기</a></p>`}
 `;
   return layout({ title: `${cls.title} · 아두이노 수업`, body });
 }
@@ -100,7 +99,6 @@ export function noClassPage() {
   <h1>아직 수업이 준비되지 않았어요.</h1>
   <p class="lead">선생님이 수업을 올리면 이 화면에 바로 나와요. 잠시 기다렸다가 새로고침(F5) 해 주세요.</p>
 </section>
-<p class="foot"><a href="/classes">지난 수업 보기</a></p>
 `;
   return layout({ title: '아두이노 수업', body });
 }

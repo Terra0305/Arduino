@@ -24,7 +24,10 @@ ${head}
              <a href="/" target="_blank" rel="noopener">학생 화면</a>
              <form method="post" action="/admin/logout"><button class="linklike" type="submit">로그아웃</button></form>
            </nav>`
-        : `<a class="brand" href="/">🔧 아두이노 수업</a>`
+        : `<a class="brand" href="/">🔧 아두이노 수업</a>
+           <nav class="topnav studentnav">
+             <a href="/classes">수업 목록</a>
+           </nav>`
     }
   </div>
 </header>

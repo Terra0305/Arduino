@@ -54,7 +54,7 @@ async function handleStudent(req, res, url) {
   if (classMatch && req.method === 'GET') {
     const cls = await store.getClass(Number(classMatch[1]));
     if (!cls) return notFound(res);
-    return html(res, student.classPage(cls, { label: cls.isCurrent ? '오늘의 수업' : '지난 수업', showPastLink: false }));
+    return html(res, student.classPage(cls, { label: cls.isCurrent ? '오늘의 수업' : '지난 수업' }));
   }
 
   // 로그인도 브라우저 기억도 없이 누구나 볼 수 있는 답변판.
