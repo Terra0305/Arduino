@@ -83,7 +83,8 @@ async function handleStudent(req, res, url) {
     if (code.length > MAX_CODE_LENGTH) return fail('코드가 너무 길어요. 필요한 부분만 붙여넣어 주세요.');
 
     const { token } = await store.createSubmission({ classId: cls ? cls.id : null, studentName, code });
-    return html(res, student.helpDonePage(studentName, token));
+    // 제출 완료 화면에서 다시 버튼을 누르게 하지 말고, 답변이 자동으로 나타나는 대기 화면으로 바로 보낸다.
+    return redirect(res, `/my/${token}`);
   }
 
   // 수업 화면 맨 위 알림이 답변 도착 여부만 물어보는 주소.

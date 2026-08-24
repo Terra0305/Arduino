@@ -210,7 +210,7 @@ export async function getSubmission(id) {
  * 학생들이 함께 보는 답변판 목록.
  * 다른 학생의 열쇠와 코드가 새어나가면 안 되므로 이름과 답변만 가져온다.
  */
-export async function listAnswerBoard(limit = 30) {
+export async function listAnswerBoard(limit = 200) {
   return await sql`
     SELECT s.id, s.student_name AS "studentName", s.status, s.feedback,
            s.feedback_at AS "feedbackAt", s.created_at AS "createdAt",

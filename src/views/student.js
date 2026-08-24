@@ -175,7 +175,7 @@ export function answersPage(list) {
       return `<li class="${answered ? 'answered' : 'waiting'}">
   <div class="ahead">
     <span class="aname">${answered ? '💬' : '🙋'} ${esc(s.studentName)}</span>
-    <span class="atime">${esc(timeHHMM(s.createdAt))}</span>
+    <span class="atime">${esc(dateShort(s.createdAt))} ${esc(timeHHMM(s.createdAt))}</span>
   </div>
   ${
     answered
@@ -216,6 +216,7 @@ export function mySubmissionPage(sub) {
   <p class="eyebrow">내가 보낸 질문</p>
   <h1>${esc(sub.studentName)} 학생</h1>
   <p class="lead">${esc(sub.classTitle || '수업')} · ${esc(timeHHMM(sub.createdAt))} 에 보냈어요</p>
+  ${answered ? '' : '<p class="waitinglive">⏳ 이 화면에서 기다리면 선생님 답변이 자동으로 나타나요.</p>'}
 </section>
 
 <section class="card">

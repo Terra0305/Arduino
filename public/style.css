@@ -186,6 +186,7 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
   border-radius: 12px; padding: 16px 20px; font-size: 20px; font-weight: 700; margin: 0 0 20px;
 }
 .done h1 { color: var(--green); }
+.waitinglive { margin: 4px 0 0; color: var(--blue); font-weight: 700; }
 .foot { text-align: center; margin: 26px 0; }
 .foot a { color: var(--dim); font-size: 17px; }
 
