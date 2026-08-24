@@ -1,172 +1,175 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import path from 'node:path';
+import { neon } from '@neondatabase/serverless';
 
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-mkdirSync(DATA_DIR, { recursive: true });
+const CONNECTION_STRING =
+  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-export const db = new DatabaseSync(path.join(DATA_DIR, 'app.db'));
+if (!CONNECTION_STRING) {
+  throw new Error(
+    'DATABASE_URL 환경변수가 없습니다. Vercel 대시보드의 Storage 에서 Postgres 를 연결해 주세요.',
+  );
+}
 
-db.exec('PRAGMA journal_mode = WAL');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS classes (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    title             TEXT NOT NULL,
-    description       TEXT NOT NULL DEFAULT '',
-    code              TEXT NOT NULL DEFAULT '',
-    materials         TEXT NOT NULL DEFAULT '[]',
-    wiringDescription TEXT NOT NULL DEFAULT '',
-    wiringImage       TEXT NOT NULL DEFAULT '',
-    notice            TEXT NOT NULL DEFAULT '',
-    isCurrent         INTEGER NOT NULL DEFAULT 0,
-    createdAt         TEXT NOT NULL,
-    updatedAt         TEXT NOT NULL
-  )
-`);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS submissions (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    classId    INTEGER,
-    seatNumber TEXT NOT NULL,
-    code       TEXT NOT NULL,
-    status     TEXT NOT NULL DEFAULT 'WAITING',
-    createdAt  TEXT NOT NULL
-  )
-`);
-db.exec('CREATE INDEX IF NOT EXISTS idx_submissions_created ON submissions(createdAt DESC)');
+const sql = neon(CONNECTION_STRING);
 
-const now = () => new Date().toISOString();
+/* 서버가 첫 요청을 받을 때 한 번만 테이블을 만든다. */
+let readyPromise = null;
 
-/** 수업 목록에서 materials 를 배열로 되돌린다. */
-function hydrate(row) {
-  if (!row) return null;
-  let materials = [];
-  try {
-    const parsed = JSON.parse(row.materials);
-    if (Array.isArray(parsed)) materials = parsed.filter((m) => typeof m === 'string');
-  } catch {
-    materials = [];
+export function ready() {
+  if (!readyPromise) {
+    // 실패한 결과를 계속 들고 있으면 DB 가 잠깐 끊겼을 때 영영 복구되지 않는다.
+    readyPromise = initialize().catch((err) => {
+      readyPromise = null;
+      throw err;
+    });
   }
-  return { ...row, materials, isCurrent: row.isCurrent === 1 };
+  return readyPromise;
 }
 
-export function getCurrentClass() {
-  return hydrate(db.prepare('SELECT * FROM classes WHERE isCurrent = 1 LIMIT 1').get());
+async function initialize() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS classes (
+      id                 SERIAL PRIMARY KEY,
+      title              TEXT NOT NULL,
+      description        TEXT NOT NULL DEFAULT '',
+      code               TEXT NOT NULL DEFAULT '',
+      materials          JSONB NOT NULL DEFAULT '[]'::jsonb,
+      wiring_description TEXT NOT NULL DEFAULT '',
+      wiring_image       TEXT NOT NULL DEFAULT '',
+      notice             TEXT NOT NULL DEFAULT '',
+      is_current         BOOLEAN NOT NULL DEFAULT false,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id          SERIAL PRIMARY KEY,
+      class_id    INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+      seat_number TEXT NOT NULL,
+      code        TEXT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'WAITING',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_submissions_created ON submissions (created_at DESC)`;
+  await seedIfEmpty();
 }
 
-export function getClass(id) {
-  return hydrate(db.prepare('SELECT * FROM classes WHERE id = ?').get(id));
+const CLASS_SELECT = `
+  SELECT id, title, description, code, materials,
+         wiring_description AS "wiringDescription",
+         wiring_image AS "wiringImage",
+         notice, is_current, created_at, updated_at
+    FROM classes`;
+
+function toClass(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    code: row.code,
+    materials: Array.isArray(row.materials) ? row.materials : [],
+    wiringDescription: row.wiringDescription,
+    wiringImage: row.wiringImage,
+    notice: row.notice,
+    isCurrent: row.is_current === true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-export function listClasses() {
-  return db.prepare('SELECT * FROM classes ORDER BY isCurrent DESC, createdAt DESC').all().map(hydrate);
+export async function getCurrentClass() {
+  const rows = await sql.query(`${CLASS_SELECT} WHERE is_current = true LIMIT 1`);
+  return toClass(rows[0]);
 }
 
-export function createClass(data) {
-  const t = now();
-  const info = db
-    .prepare(
-      `INSERT INTO classes (title, description, code, materials, wiringDescription, wiringImage, notice, isCurrent, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-    )
-    .run(
-      data.title,
-      data.description,
-      data.code,
-      JSON.stringify(data.materials),
-      data.wiringDescription,
-      data.wiringImage,
-      data.notice,
-      t,
-      t,
-    );
-  const id = Number(info.lastInsertRowid);
-  if (data.isCurrent) setCurrentClass(id);
+export async function getClass(id) {
+  const rows = await sql.query(`${CLASS_SELECT} WHERE id = $1`, [id]);
+  return toClass(rows[0]);
+}
+
+export async function listClasses() {
+  const rows = await sql.query(`${CLASS_SELECT} ORDER BY is_current DESC, created_at DESC`);
+  return rows.map(toClass);
+}
+
+export async function createClass(data) {
+  const rows = await sql`
+    INSERT INTO classes (title, description, code, materials, wiring_description, wiring_image, notice)
+    VALUES (${data.title}, ${data.description}, ${data.code}, ${JSON.stringify(data.materials)},
+            ${data.wiringDescription}, ${data.wiringImage}, ${data.notice})
+    RETURNING id`;
+  const id = rows[0].id;
+  if (data.isCurrent) await setCurrentClass(id);
   return id;
 }
 
-export function updateClass(id, data) {
-  db.prepare(
-    `UPDATE classes
-        SET title = ?, description = ?, code = ?, materials = ?,
-            wiringDescription = ?, wiringImage = ?, notice = ?, updatedAt = ?
-      WHERE id = ?`,
-  ).run(
-    data.title,
-    data.description,
-    data.code,
-    JSON.stringify(data.materials),
-    data.wiringDescription,
-    data.wiringImage,
-    data.notice,
-    now(),
-    id,
-  );
-  if (data.isCurrent) setCurrentClass(id);
-  else db.prepare('UPDATE classes SET isCurrent = 0 WHERE id = ?').run(id);
+export async function updateClass(id, data) {
+  await sql`
+    UPDATE classes
+       SET title = ${data.title},
+           description = ${data.description},
+           code = ${data.code},
+           materials = ${JSON.stringify(data.materials)},
+           wiring_description = ${data.wiringDescription},
+           wiring_image = ${data.wiringImage},
+           notice = ${data.notice},
+           updated_at = now()
+     WHERE id = ${id}`;
+  if (data.isCurrent) await setCurrentClass(id);
+  else await sql`UPDATE classes SET is_current = false WHERE id = ${id}`;
 }
 
-export function setCurrentClass(id) {
-  db.exec('BEGIN');
-  try {
-    db.prepare('UPDATE classes SET isCurrent = 0').run();
-    db.prepare('UPDATE classes SET isCurrent = 1 WHERE id = ?').run(id);
-    db.exec('COMMIT');
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
-  }
+export async function setCurrentClass(id) {
+  await sql.transaction([
+    sql`UPDATE classes SET is_current = false WHERE is_current = true`,
+    sql`UPDATE classes SET is_current = true WHERE id = ${id}`,
+  ]);
 }
 
-export function deleteClass(id) {
-  db.prepare('DELETE FROM classes WHERE id = ?').run(id);
+export async function deleteClass(id) {
+  await sql`DELETE FROM classes WHERE id = ${id}`;
 }
 
-export function createSubmission({ classId, seatNumber, code }) {
-  const info = db
-    .prepare('INSERT INTO submissions (classId, seatNumber, code, status, createdAt) VALUES (?, ?, ?, ?, ?)')
-    .run(classId ?? null, seatNumber, code, 'WAITING', now());
-  return Number(info.lastInsertRowid);
+export async function createSubmission({ classId, seatNumber, code }) {
+  const rows = await sql`
+    INSERT INTO submissions (class_id, seat_number, code)
+    VALUES (${classId}, ${seatNumber}, ${code})
+    RETURNING id`;
+  return rows[0].id;
 }
 
-export function listSubmissions(status) {
-  const sql = `SELECT s.*, c.title AS classTitle
-                 FROM submissions s
-            LEFT JOIN classes c ON c.id = s.classId
-                ${status ? 'WHERE s.status = ?' : ''}
-             ORDER BY s.createdAt DESC`;
-  const stmt = db.prepare(sql);
-  return status ? stmt.all(status) : stmt.all();
+export async function listSubmissions() {
+  return await sql`
+    SELECT s.id, s.seat_number AS "seatNumber", s.code, s.status,
+           s.created_at AS "createdAt", c.title AS "classTitle"
+      FROM submissions s
+      LEFT JOIN classes c ON c.id = s.class_id
+     ORDER BY s.created_at DESC`;
 }
 
-export function getSubmission(id) {
-  return db
-    .prepare(
-      `SELECT s.*, c.title AS classTitle
-         FROM submissions s
-    LEFT JOIN classes c ON c.id = s.classId
-        WHERE s.id = ?`,
-    )
-    .get(id);
+export async function getSubmission(id) {
+  const rows = await sql`
+    SELECT s.id, s.seat_number AS "seatNumber", s.code, s.status,
+           s.created_at AS "createdAt", c.title AS "classTitle"
+      FROM submissions s
+      LEFT JOIN classes c ON c.id = s.class_id
+     WHERE s.id = ${id}`;
+  return rows[0] || null;
 }
 
-export function setSubmissionStatus(id, status) {
-  db.prepare('UPDATE submissions SET status = ? WHERE id = ?').run(status, id);
+export async function setSubmissionStatus(id, status) {
+  await sql`UPDATE submissions SET status = ${status} WHERE id = ${id}`;
 }
 
-export function deleteSubmission(id) {
-  db.prepare('DELETE FROM submissions WHERE id = ?').run(id);
+export async function deleteSubmission(id) {
+  await sql`DELETE FROM submissions WHERE id = ${id}`;
 }
 
-export function countWaiting() {
-  return db.prepare("SELECT COUNT(*) AS n FROM submissions WHERE status = 'WAITING'").get().n;
-}
-
-/** 처음 실행했을 때 빈 화면 대신 예시 수업 하나를 보여준다. */
-export function seedIfEmpty() {
-  const { n } = db.prepare('SELECT COUNT(*) AS n FROM classes').get();
-  if (n > 0) return;
-  const id = createClass({
+/* 처음 배포했을 때 빈 화면 대신 예시 수업 하나를 보여준다. */
+async function seedIfEmpty() {
+  const rows = await sql`SELECT COUNT(*)::int AS n FROM classes`;
+  if (rows[0].n > 0) return;
+  await createClass({
     title: 'LCD에 글자 띄우기',
     description: '오늘은 LCD 화면에 원하는 글자를 표시해 봅니다.',
     code: `#include <LiquidCrystal_I2C.h>
@@ -190,5 +193,4 @@ void loop() {
     notice: '⚠️ 오늘은 Arduino UNO만 사용합니다.',
     isCurrent: true,
   });
-  return id;
 }

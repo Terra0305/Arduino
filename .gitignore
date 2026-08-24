@@ -2,3 +2,8 @@ node_modules/
 data/
 *.log
 .DS_Store
+
+# 비밀번호와 DB 접속 주소는 절대 커밋하지 않는다
+.env
+.env.*
+.vercel/

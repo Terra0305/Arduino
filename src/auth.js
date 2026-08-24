@@ -1,29 +1,15 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import path from 'node:path';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { parseCookies } from './http.js';
 
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const COOKIE = 'teacher';
 
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'arduino';
 export const USING_DEFAULT_PASSWORD = !process.env.ADMIN_PASSWORD;
 
-/** 서버를 다시 켜도 로그인이 유지되도록 비밀키를 파일에 보관한다. */
-function loadSecret() {
-  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-  const file = path.join(DATA_DIR, 'secret.key');
-  try {
-    return readFileSync(file, 'utf8').trim();
-  } catch {
-    const secret = randomBytes(32).toString('hex');
-    mkdirSync(DATA_DIR, { recursive: true });
-    writeFileSync(file, secret, { mode: 0o600 });
-    return secret;
-  }
-}
-
-const SECRET = loadSecret();
+// Vercel 은 파일을 저장할 수 없으므로 비밀키를 파일에 두지 않는다.
+// SESSION_SECRET 이 없으면 비밀번호에서 만들어 쓴다 — 쿠키 값은 해시라
+// 비밀번호를 모르면 만들어낼 수 없고, 서버가 새로 떠도 로그인이 유지된다.
+const SECRET = process.env.SESSION_SECRET || `arduino-class:${ADMIN_PASSWORD}`;
 
 function sameString(a, b) {
   const bufA = Buffer.from(String(a));
