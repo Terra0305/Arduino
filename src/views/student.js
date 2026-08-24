@@ -84,6 +84,7 @@ ${wiring(cls)}
 
 <section class="card">
   <a class="big warn" href="/help?classId=${cls.id}">🙋 선생님, 안 돼요</a>
+  <a class="big ghost" href="/answers">💬 선생님 답변 보기</a>
   <div id="myanswer"></div>
 </section>
 
@@ -164,6 +165,47 @@ export function helpDonePage(studentName, token) {
 </section>
 `;
   return layout({ title: '보냈어요', body });
+}
+
+/** 누구나 볼 수 있는 답변판. 로그인도, 브라우저 기억도 필요하지 않다. */
+export function answersPage(list) {
+  const rows = list
+    .map((s) => {
+      const answered = Boolean(s.feedback);
+      return `<li class="${answered ? 'answered' : 'waiting'}">
+  <div class="ahead">
+    <span class="aname">${answered ? '💬' : '🙋'} ${esc(s.studentName)}</span>
+    <span class="atime">${esc(timeHHMM(s.createdAt))}</span>
+  </div>
+  ${
+    answered
+      ? `<div class="feedback">${esc(s.feedback)}</div>`
+      : `<p class="dim">선생님이 확인하고 있어요.</p>`
+  }
+</li>`;
+    })
+    .join('\n');
+
+  const body = `
+<section class="card hero">
+  <p class="eyebrow">선생님 답변</p>
+  <h1>선생님이 뭐라고 했나요?</h1>
+  <p class="lead">보낸 질문과 선생님 답변이 여기에 모여요. 답변이 오면 저절로 나타나요.</p>
+</section>
+
+${
+  list.length
+    ? `<ul class="answerlist">\n${rows}\n</ul>`
+    : `<p class="empty">아직 보낸 질문이 없어요.</p>`
+}
+
+<p class="foot"><a href="/">수업으로 돌아가기</a></p>
+`;
+  return layout({
+    title: '선생님 답변 · 아두이노 수업',
+    body,
+    scripts: `<script>setTimeout(function(){location.reload()},15000)</script>`,
+  });
 }
 
 /** 학생이 자기 제출과 선생님 답변을 보는 화면. */

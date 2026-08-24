@@ -206,6 +206,21 @@ export async function getSubmission(id) {
   return rows[0] || null;
 }
 
+/**
+ * 학생들이 함께 보는 답변판 목록.
+ * 다른 학생의 열쇠와 코드가 새어나가면 안 되므로 이름과 답변만 가져온다.
+ */
+export async function listAnswerBoard(limit = 30) {
+  return await sql`
+    SELECT s.id, s.student_name AS "studentName", s.status, s.feedback,
+           s.feedback_at AS "feedbackAt", s.created_at AS "createdAt",
+           c.title AS "classTitle"
+      FROM submissions s
+      LEFT JOIN classes c ON c.id = s.class_id
+     ORDER BY s.created_at DESC
+     LIMIT ${limit}`;
+}
+
 export async function getSubmissionByToken(token) {
   const rows = await sql.query(`${SUBMISSION_SELECT} WHERE s.token = $1`, [token]);
   return rows[0] || null;

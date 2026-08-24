@@ -57,6 +57,11 @@ async function handleStudent(req, res, url) {
     return html(res, student.classPage(cls, { label: cls.isCurrent ? '오늘의 수업' : '지난 수업', showPastLink: false }));
   }
 
+  // 로그인도 브라우저 기억도 없이 누구나 볼 수 있는 답변판.
+  if (pathname === '/answers' && req.method === 'GET') {
+    return html(res, student.answersPage(await store.listAnswerBoard()));
+  }
+
   if (pathname === '/help' && req.method === 'GET') {
     const idParam = url.searchParams.get('classId');
     const cls = (idParam && (await store.getClass(Number(idParam)))) || (await store.getCurrentClass());

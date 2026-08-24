@@ -189,6 +189,22 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
 .foot { text-align: center; margin: 26px 0; }
 .foot a { color: var(--dim); font-size: 17px; }
 
+/* ---- 답변판 ---- */
+.answerlist { list-style: none; margin: 0; padding: 0; }
+.answerlist li {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px 22px; margin-bottom: 14px;
+}
+.answerlist li.answered { border-color: #7fb4ff; }
+.answerlist .ahead {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
+}
+.answerlist .aname { font-size: 21px; font-weight: 800; }
+.answerlist .atime { color: var(--dim); font-size: 16px; white-space: nowrap; }
+.answerlist .feedback { font-size: 19px; padding: 16px 18px; }
+.answerlist li.waiting .dim { margin: 0; }
+
 /* ---- 답변 알림 ---- */
 .answerbanner {
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
