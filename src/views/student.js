@@ -7,11 +7,11 @@ function notice(cls) {
   return `<div class="notice">${esc(cls.notice)}</div>`;
 }
 
-export function codeBlock(code, { copyLabel = '코드 복사', id = 'code' } = {}) {
+export function codeBlock(code, { copyLabel = '코드 복사', id = 'code', title = 'Arduino 코드' } = {}) {
   if (!code.trim()) return `<p class="empty">아직 코드가 없어요.</p>`;
   return `<div class="codebox">
   <div class="codebar">
-    <span>Arduino 코드</span>
+    <span>${esc(title)}</span>
     <button type="button" class="copy small" data-copy-target="#${esc(id)}">📋 ${esc(copyLabel)}</button>
   </div>
   <pre id="${esc(id)}"><code>${highlight(code)}</code></pre>
@@ -59,6 +59,11 @@ function wiring(cls) {
 }
 
 export function classPage(cls, { label = '오늘의 수업' } = {}) {
+  const codes = cls.codes?.length
+    ? cls.codes
+    : cls.code?.trim()
+      ? [{ title: '기본 코드', code: cls.code }]
+      : [];
   const body = `
 <div id="answerbanner"></div>
 ${notice(cls)}
@@ -66,15 +71,20 @@ ${notice(cls)}
   <p class="eyebrow">${esc(label)}</p>
   <h1>${esc(cls.title)}</h1>
   ${cls.description ? `<p class="lead">${esc(cls.description)}</p>` : ''}
-  ${
-    cls.code.trim()
-      ? `<button type="button" class="big primary" data-copy-target="#code" data-copy-again="📋 다시 복사하기">📋 코드 복사하기</button>
-         <p class="copyhint" data-copy-hint>버튼을 누르면 코드 전체가 복사돼요.</p>`
-      : ''
-  }
+  ${codes.length ? `<p class="copyhint">아래에서 필요한 코드를 골라 복사하세요.</p>` : ''}
 </section>
 
-${codeBlock(cls.code)}
+${
+  codes.length
+    ? `<section class="lessoncodes">
+      ${codes.map((item, index) => codeBlock(item.code, {
+        copyLabel: `${item.title} 복사`,
+        id: `code-${index + 1}`,
+        title: item.title,
+      })).join('\n')}
+    </section>`
+    : '<p class="empty">아직 코드가 없어요.</p>'
+}
 
 ${steps()}
 

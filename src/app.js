@@ -144,10 +144,18 @@ async function handleStudent(req, res, url) {
 
 function readClassForm(form) {
   const wiringImage = form.get('wiringImage') || '';
+  const codeTitles = form.getAll('codeTitle');
+  const codeBodies = form.getAll('code');
+  const codes = codeBodies
+    .map((code, index) => ({
+      title: String(codeTitles[index] || '').trim(),
+      code: String(code || ''),
+    }))
+    .filter((item) => item.title || item.code.trim());
   return {
     title: (form.get('title') || '').trim(),
     description: (form.get('description') || '').trim(),
-    code: form.get('code') || '',
+    codes,
     materials: (form.get('materials') || '')
       .split('\n')
       .map((line) => line.trim())
@@ -207,7 +215,10 @@ async function handleAdmin(req, res, url) {
 
   if (pathname === '/admin/classes' && req.method === 'POST') {
     const data = readClassForm(await readForm(req));
-    if (!data.title) return html(res, admin.classFormPage({ error: '수업 제목을 입력해 주세요.' }), 400);
+    if (!data.title) return html(res, admin.classFormPage({ cls: data, error: '수업 제목을 입력해 주세요.' }), 400);
+    if (data.codes.some((item) => !item.title || !item.code.trim())) {
+      return html(res, admin.classFormPage({ cls: data, error: '각 코드의 제목과 내용을 모두 입력해 주세요.' }), 400);
+    }
     await store.createClass(data);
     return redirect(res, '/admin/classes');
   }
@@ -227,6 +238,9 @@ async function handleAdmin(req, res, url) {
     const data = readClassForm(await readForm(req));
     if (!data.title) {
       return html(res, admin.classFormPage({ cls: { ...cls, ...data }, error: '수업 제목을 입력해 주세요.' }), 400);
+    }
+    if (data.codes.some((item) => !item.title || !item.code.trim())) {
+      return html(res, admin.classFormPage({ cls: { ...cls, ...data }, error: '각 코드의 제목과 내용을 모두 입력해 주세요.' }), 400);
     }
     // 입력칸이 없어진 항목은 저장된 값을 그대로 둔다.
     await store.updateClass(id, { ...data, wiringDescription: cls.wiringDescription });

@@ -114,11 +114,16 @@ ${classes
 }
 
 export function classFormPage({ cls = null, error = '' }) {
-  const isNew = !cls;
+  const isNew = !cls?.id;
+  const savedCodes = cls?.codes?.length
+    ? cls.codes
+    : cls?.code
+      ? [{ title: '기본 코드', code: cls.code }]
+      : [{ title: '', code: '' }];
   const v = {
     title: cls?.title ?? '',
     description: cls?.description ?? '',
-    code: cls?.code ?? '',
+    codes: savedCodes,
     materials: (cls?.materials ?? []).join('\n'),
     wiringImage: cls?.wiringImage ?? '',
     notice: cls?.notice ?? '',
@@ -134,8 +139,14 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
   <label for="description">짧은 설명</label>
   <input type="text" id="description" name="description" value="${esc(v.description)}" placeholder="LCD 화면에 Hello를 출력해 봅니다.">
 
-  <label for="code">Arduino 코드</label>
-  <textarea id="code" name="code" rows="18" spellcheck="false" class="mono">${esc(v.code)}</textarea>
+  <fieldset class="codeeditors">
+    <legend>Arduino 코드</legend>
+    <p class="dim codehelp">코드마다 제목을 붙여 주세요. 학생 화면에서 제목별로 나뉘어 보여요.</p>
+    <div id="codeEditorList">
+      ${v.codes.map((item, index) => codeEditor(item, index)).join('\n')}
+    </div>
+    <button class="btn codeadd" type="button" id="addCode">+ 코드 추가</button>
+  </fieldset>
 
   <label for="materials">준비물 <span class="dim">(한 줄에 하나씩)</span></label>
   <textarea id="materials" name="materials" rows="5" placeholder="Arduino UNO&#10;LCD 화면&#10;점퍼선 4개">${esc(v.materials)}</textarea>
@@ -160,6 +171,19 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
 </form>
 `;
   return layout({ title: `${isNew ? '새 수업' : '수업 수정'} · 관리자`, body, variant: 'admin' });
+}
+
+function codeEditor(item, index) {
+  return `<section class="codeeditor" data-code-editor>
+    <div class="codeeditorhead">
+      <strong data-code-number>코드 ${index + 1}</strong>
+      <button class="btn danger coderemove" type="button" data-remove-code>삭제</button>
+    </div>
+    <label>코드 제목</label>
+    <input type="text" name="codeTitle" value="${esc(item.title)}" placeholder="예: 1단계 · LED 한 번 켜기">
+    <label>코드 내용</label>
+    <textarea name="code" rows="14" spellcheck="false" class="mono" placeholder="Arduino 코드를 붙여넣으세요">${esc(item.code)}</textarea>
+  </section>`;
 }
 
 export function submissionsPage(all) {

@@ -56,6 +56,7 @@ async function initialize() {
       title              TEXT NOT NULL,
       description        TEXT NOT NULL DEFAULT '',
       code               TEXT NOT NULL DEFAULT '',
+      codes              JSONB NOT NULL DEFAULT '[]'::jsonb,
       materials          JSONB NOT NULL DEFAULT '[]'::jsonb,
       wiring_description TEXT NOT NULL DEFAULT '',
       wiring_image       TEXT NOT NULL DEFAULT '',
@@ -89,6 +90,13 @@ async function initialize() {
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS question TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT NOT NULL DEFAULT ''`;
   await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE classes ADD COLUMN IF NOT EXISTS codes JSONB NOT NULL DEFAULT '[]'::jsonb`;
+
+  // 한 개짜리 코드 칸을 사용하던 기존 수업은 제목이 붙은 코드 목록으로 자동 변환한다.
+  await sql`
+    UPDATE classes
+       SET codes = jsonb_build_array(jsonb_build_object('title', '기본 코드', 'code', code))
+     WHERE jsonb_array_length(codes) = 0 AND btrim(code) <> ''`;
 
   // 첫 배포용 예시 수업에 넣어두었던 기본 공지는 이제 표시하지 않는다.
   await sql`
@@ -108,7 +116,7 @@ async function initialize() {
 }
 
 const CLASS_SELECT = `
-  SELECT id, title, description, code, materials,
+  SELECT id, title, description, code, codes, materials,
          wiring_description AS "wiringDescription",
          wiring_image AS "wiringImage",
          notice, is_current, created_at, updated_at
@@ -116,11 +124,22 @@ const CLASS_SELECT = `
 
 function toClass(row) {
   if (!row) return null;
+  const savedCodes = Array.isArray(row.codes)
+    ? row.codes.filter((item) => item && typeof item.code === 'string')
+    : [];
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     code: row.code,
+    codes: savedCodes.length
+      ? savedCodes.map((item, index) => ({
+          title: String(item.title || `코드 ${index + 1}`),
+          code: item.code,
+        }))
+      : row.code
+        ? [{ title: '기본 코드', code: row.code }]
+        : [],
     materials: Array.isArray(row.materials) ? row.materials : [],
     wiringDescription: row.wiringDescription,
     wiringImage: row.wiringImage,
@@ -147,9 +166,11 @@ export async function listClasses() {
 }
 
 export async function createClass(data) {
+  const codes = data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []);
+  const legacyCode = codes[0]?.code || '';
   const rows = await sql`
-    INSERT INTO classes (title, description, code, materials, wiring_description, wiring_image, notice)
-    VALUES (${data.title}, ${data.description}, ${data.code}, ${JSON.stringify(data.materials)},
+    INSERT INTO classes (title, description, code, codes, materials, wiring_description, wiring_image, notice)
+    VALUES (${data.title}, ${data.description}, ${legacyCode}, ${JSON.stringify(codes)}, ${JSON.stringify(data.materials)},
             ${data.wiringDescription}, ${data.wiringImage}, ${data.notice})
     RETURNING id`;
   const id = rows[0].id;
@@ -158,11 +179,14 @@ export async function createClass(data) {
 }
 
 export async function updateClass(id, data) {
+  const codes = data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []);
+  const legacyCode = codes[0]?.code || '';
   await sql`
     UPDATE classes
        SET title = ${data.title},
            description = ${data.description},
-           code = ${data.code},
+           code = ${legacyCode},
+           codes = ${JSON.stringify(codes)},
            materials = ${JSON.stringify(data.materials)},
            wiring_description = ${data.wiringDescription},
            wiring_image = ${data.wiringImage},

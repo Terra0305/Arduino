@@ -129,6 +129,8 @@ body.admin .top { background: #26313f; }
   font: 17px/1.7 "D2Coding", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   tab-size: 2;
 }
+.lessoncodes .codebox { margin-bottom: 24px; }
+.lessoncodes .codebar span { color: #fff; font-size: 17px; }
 .t-comment { color: #7f9ab8; font-style: italic; }
 .t-string  { color: #9fe58b; }
 .t-pre     { color: #f3a4c9; }
@@ -309,6 +311,15 @@ input:focus, textarea:focus, .seat:focus { outline: 3px solid #9cc4ff; border-co
 .formbtns { display: flex; gap: 12px; margin-top: 26px; }
 .formbtns .big { margin-bottom: 0; }
 #wiringPreview { margin-top: 14px; }
+.codeeditors { border: 0; padding: 0; margin: 22px 0 0; min-width: 0; }
+.codeeditors legend { font-weight: 700; padding: 0; }
+.codehelp { margin: 6px 0 12px; }
+.codeeditor { border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; background: #f8faff; }
+.codeeditorhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.codeeditor .codeeditorhead + label { margin-top: 14px; }
+.codeeditor textarea { min-height: 220px; }
+.coderemove:disabled { opacity: .4; cursor: not-allowed; }
+.codeadd { margin-top: 0; }
 
 @media (max-width: 560px) {
   body { font-size: 17px; }

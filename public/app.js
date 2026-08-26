@@ -337,8 +337,7 @@
 
   /* ------------------------------------------------ 코드 입력창에서 Tab */
 
-  var codeTextarea = document.querySelector('textarea.mono');
-  if (codeTextarea) {
+  function enableCodeTab(codeTextarea) {
     codeTextarea.addEventListener('keydown', function (event) {
       if (event.key !== 'Tab') return;
       event.preventDefault();
@@ -347,5 +346,42 @@
       codeTextarea.value = codeTextarea.value.slice(0, start) + '  ' + codeTextarea.value.slice(end);
       codeTextarea.selectionStart = codeTextarea.selectionEnd = start + 2;
     });
+  }
+  document.querySelectorAll('textarea.mono').forEach(enableCodeTab);
+
+  /* ------------------------------------------------ 수업 코드 여러 개 추가/삭제 */
+
+  var codeEditorList = document.getElementById('codeEditorList');
+  var addCodeButton = document.getElementById('addCode');
+
+  function renumberCodeEditors() {
+    if (!codeEditorList) return;
+    var editors = codeEditorList.querySelectorAll('[data-code-editor]');
+    editors.forEach(function (editor, index) {
+      editor.querySelector('[data-code-number]').textContent = '코드 ' + (index + 1);
+      editor.querySelector('[data-remove-code]').disabled = editors.length === 1;
+    });
+  }
+
+  if (codeEditorList && addCodeButton) {
+    addCodeButton.addEventListener('click', function () {
+      var first = codeEditorList.querySelector('[data-code-editor]');
+      var editor = first.cloneNode(true);
+      editor.querySelector('input[name="codeTitle"]').value = '';
+      editor.querySelector('textarea[name="code"]').value = '';
+      enableCodeTab(editor.querySelector('textarea.mono'));
+      codeEditorList.appendChild(editor);
+      renumberCodeEditors();
+      editor.querySelector('input[name="codeTitle"]').focus();
+    });
+
+    codeEditorList.addEventListener('click', function (event) {
+      var removeButton = event.target.closest('[data-remove-code]');
+      if (!removeButton || removeButton.disabled) return;
+      removeButton.closest('[data-code-editor]').remove();
+      renumberCodeEditors();
+    });
+
+    renumberCodeEditors();
   }
 })();
