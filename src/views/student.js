@@ -59,11 +59,14 @@ function wiring(cls) {
 }
 
 export function classPage(cls, { label = '오늘의 수업' } = {}) {
-  const codes = cls.codes?.length
+  const allCodes = cls.codes?.length
     ? cls.codes
     : cls.code?.trim()
-      ? [{ title: '기본 코드', code: cls.code }]
+      ? [{ title: '기본 코드', code: cls.code, released: true }]
       : [];
+  // 선생님이 아직 공개하지 않은 단계는 제목도 내용도 학생에게 보내지 않는다.
+  const codes = allCodes.filter((item) => item.released !== false);
+  const lockedCount = allCodes.length - codes.length;
   const body = `
 <div id="answerbanner"></div>
 ${notice(cls)}
@@ -71,20 +74,29 @@ ${notice(cls)}
   <p class="eyebrow">${esc(label)}</p>
   <h1>${esc(cls.title)}</h1>
   ${cls.description ? `<p class="lead">${esc(cls.description)}</p>` : ''}
-  ${codes.length ? `<p class="copyhint">아래에서 필요한 코드를 골라 복사하세요.</p>` : ''}
+  ${codes.length > 1 ? `<p class="copyhint">아래에서 필요한 코드를 골라 복사하세요.</p>` : ''}
 </section>
 
-${
-  codes.length
-    ? `<section class="lessoncodes">
-      ${codes.map((item, index) => codeBlock(item.code, {
-        copyLabel: `${item.title} 복사`,
-        id: `code-${index + 1}`,
-        title: item.title,
-      })).join('\n')}
-    </section>`
-    : '<p class="empty">아직 코드가 없어요.</p>'
-}
+<section class="lessoncodes" data-class-id="${cls.id}" data-released="${codes.length}">
+  ${
+    codes.length
+      ? codes
+          .map((item, index) =>
+            codeBlock(item.code, {
+              copyLabel: `${item.title} 복사`,
+              id: `code-${index + 1}`,
+              title: item.title,
+            }),
+          )
+          .join('\n')
+      : '<p class="empty">아직 코드가 없어요.</p>'
+  }
+  ${
+    lockedCount
+      ? `<p class="lockednote">🔒 다음 단계 코드 ${lockedCount}개는 아직 잠겨 있어요. 선생님이 공개하면 이 화면에 저절로 나타나요.</p>`
+      : ''
+  }
+</section>
 
 ${steps()}
 

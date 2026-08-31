@@ -132,13 +132,15 @@ function toClass(row) {
     title: row.title,
     description: row.description,
     code: row.code,
+    // released 가 없던 시절에 저장된 코드는 이미 학생이 보던 코드이므로 공개로 본다.
     codes: savedCodes.length
       ? savedCodes.map((item, index) => ({
           title: String(item.title || `코드 ${index + 1}`),
           code: item.code,
+          released: item.released !== false,
         }))
       : row.code
-        ? [{ title: '기본 코드', code: row.code }]
+        ? [{ title: '기본 코드', code: row.code, released: true }]
         : [],
     materials: Array.isArray(row.materials) ? row.materials : [],
     wiringDescription: row.wiringDescription,
@@ -148,6 +150,15 @@ function toClass(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/** 저장 직전에 코드 목록을 {제목, 내용, 공개여부} 형태로 맞춘다. */
+function normalizeCodes(codes) {
+  return codes.map((item, index) => ({
+    title: String(item.title || `코드 ${index + 1}`),
+    code: String(item.code || ''),
+    released: item.released !== false,
+  }));
 }
 
 export async function getCurrentClass() {
@@ -166,7 +177,7 @@ export async function listClasses() {
 }
 
 export async function createClass(data) {
-  const codes = data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []);
+  const codes = normalizeCodes(data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []));
   const legacyCode = codes[0]?.code || '';
   const rows = await sql`
     INSERT INTO classes (title, description, code, codes, materials, wiring_description, wiring_image, notice)
@@ -179,7 +190,7 @@ export async function createClass(data) {
 }
 
 export async function updateClass(id, data) {
-  const codes = data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []);
+  const codes = normalizeCodes(data.codes ?? (data.code ? [{ title: '기본 코드', code: data.code }] : []));
   const legacyCode = codes[0]?.code || '';
   await sql`
     UPDATE classes
@@ -195,6 +206,48 @@ export async function updateClass(id, data) {
      WHERE id = ${id}`;
   if (data.isCurrent) await setCurrentClass(id);
   else await sql`UPDATE classes SET is_current = false WHERE id = ${id}`;
+}
+
+/* ------------------------------------------------- 코드 단계별 공개 */
+
+/** 저장된 코드 목록을 그대로 읽어온다 (공개 여부만 바꿔 다시 쓰기 위한 용도). */
+async function readRawCodes(id) {
+  const rows = await sql`SELECT codes FROM classes WHERE id = ${id}`;
+  if (!rows.length) return null;
+  return Array.isArray(rows[0].codes) ? rows[0].codes : [];
+}
+
+async function writeRawCodes(id, codes) {
+  await sql`UPDATE classes SET codes = ${JSON.stringify(codes)}, updated_at = now() WHERE id = ${id}`;
+}
+
+/** 코드 한 개만 공개하거나 다시 숨긴다. */
+export async function setCodeReleased(id, index, released) {
+  const codes = await readRawCodes(id);
+  if (!codes || !codes[index]) return;
+  codes[index] = { ...codes[index], released };
+  await writeRawCodes(id, codes);
+}
+
+/** 아직 숨겨진 코드 중 맨 앞의 것 하나만 공개한다 (수업 중 "다음 단계" 버튼). */
+export async function releaseNextCode(id) {
+  const codes = await readRawCodes(id);
+  if (!codes) return false;
+  const index = codes.findIndex((item) => item.released === false);
+  if (index < 0) return false;
+  codes[index] = { ...codes[index], released: true };
+  await writeRawCodes(id, codes);
+  return true;
+}
+
+/** 전부 공개하거나, 첫 코드만 남기고 전부 숨긴다. */
+export async function setAllCodesReleased(id, released) {
+  const codes = await readRawCodes(id);
+  if (!codes) return;
+  await writeRawCodes(
+    id,
+    codes.map((item, index) => ({ ...item, released: released ? true : index === 0 })),
+  );
 }
 
 export async function setCurrentClass(id) {

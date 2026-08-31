@@ -62,6 +62,15 @@ async function handleStudent(req, res, url) {
     return html(res, student.classPage(cls, { label: cls.isCurrent ? '오늘의 수업' : '지난 수업' }));
   }
 
+  // 새 코드가 공개됐는지만 확인하는 주소 (학생 화면이 스스로 새로고침할 때 쓴다).
+  const codeStateMatch = pathname.match(/^\/classes\/(\d+)\/code-state$/);
+  if (codeStateMatch && req.method === 'GET') {
+    const cls = await store.getClass(Number(codeStateMatch[1]));
+    if (!cls) return send(res, 404, '{}', { 'Content-Type': 'application/json' });
+    const released = cls.codes.filter((item) => item.released).length;
+    return send(res, 200, JSON.stringify({ released }), { 'Content-Type': 'application/json' });
+  }
+
   // 로그인도 브라우저 기억도 없이 누구나 볼 수 있는 답변판.
   if (pathname === '/answers' && req.method === 'GET') {
     return html(res, student.answersPage(await store.listAnswerBoard()));
@@ -146,10 +155,14 @@ function readClassForm(form) {
   const wiringImage = form.get('wiringImage') || '';
   const codeTitles = form.getAll('codeTitle');
   const codeBodies = form.getAll('code');
+  // 체크박스는 꺼두면 아예 전송되지 않아 순서가 어긋난다. 그래서 항상 보내지는
+  // 숨은 칸(0/1)을 쓰고, 체크박스는 화면에서 그 값을 바꾸는 역할만 한다.
+  const codeReleased = form.getAll('codeReleased');
   const codes = codeBodies
     .map((code, index) => ({
       title: String(codeTitles[index] || '').trim(),
       code: String(code || ''),
+      released: String(codeReleased[index] ?? '1') === '1',
     }))
     .filter((item) => item.title || item.code.trim());
   return {
@@ -245,6 +258,30 @@ async function handleAdmin(req, res, url) {
     // 입력칸이 없어진 항목은 저장된 값을 그대로 둔다.
     await store.updateClass(id, { ...data, wiringDescription: cls.wiringDescription });
     return redirect(res, '/admin/classes');
+  }
+
+  // 수업 중에 다음 단계 코드를 눌러서 공개하는 곳. 어디서 눌렀든 그 화면으로 돌아간다.
+  const backTo = (form) => (form.get('returnTo') === '/admin/classes' ? '/admin/classes' : '/admin');
+
+  const releaseOneMatch = pathname.match(/^\/admin\/classes\/(\d+)\/codes\/(\d+)\/release$/);
+  if (releaseOneMatch && req.method === 'POST') {
+    const form = await readForm(req);
+    await store.setCodeReleased(Number(releaseOneMatch[1]), Number(releaseOneMatch[2]), form.get('released') === '1');
+    return redirect(res, backTo(form));
+  }
+
+  const releaseNextMatch = pathname.match(/^\/admin\/classes\/(\d+)\/codes\/next$/);
+  if (releaseNextMatch && req.method === 'POST') {
+    const form = await readForm(req);
+    await store.releaseNextCode(Number(releaseNextMatch[1]));
+    return redirect(res, backTo(form));
+  }
+
+  const releaseAllMatch = pathname.match(/^\/admin\/classes\/(\d+)\/codes\/all$/);
+  if (releaseAllMatch && req.method === 'POST') {
+    const form = await readForm(req);
+    await store.setAllCodesReleased(Number(releaseAllMatch[1]), form.get('released') === '1');
+    return redirect(res, backTo(form));
   }
 
   const currentMatch = pathname.match(/^\/admin\/classes\/(\d+)\/current$/);

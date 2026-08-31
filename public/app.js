@@ -363,12 +363,25 @@
     });
   }
 
+  // 체크박스는 꺼두면 전송되지 않아 코드 순서와 어긋난다.
+  // 그래서 항상 전송되는 숨은 칸(0/1)에 체크 상태를 옮겨 적는다.
+  function syncRelease(editor) {
+    var check = editor.querySelector('[data-release-check]');
+    var field = editor.querySelector('[data-release-field]');
+    if (!check || !field) return;
+    field.value = check.checked ? '1' : '0';
+  }
+
   if (codeEditorList && addCodeButton) {
     addCodeButton.addEventListener('click', function () {
       var first = codeEditorList.querySelector('[data-code-editor]');
       var editor = first.cloneNode(true);
       editor.querySelector('input[name="codeTitle"]').value = '';
       editor.querySelector('textarea[name="code"]').value = '';
+      // 뒤에 추가하는 코드는 보통 다음 단계이므로 처음에는 숨긴 상태로 시작한다.
+      var check = editor.querySelector('[data-release-check]');
+      if (check) check.checked = false;
+      syncRelease(editor);
       enableCodeTab(editor.querySelector('textarea.mono'));
       codeEditorList.appendChild(editor);
       renumberCodeEditors();
@@ -377,11 +390,32 @@
 
     codeEditorList.addEventListener('click', function (event) {
       var removeButton = event.target.closest('[data-remove-code]');
-      if (!removeButton || removeButton.disabled) return;
-      removeButton.closest('[data-code-editor]').remove();
-      renumberCodeEditors();
+      if (removeButton && !removeButton.disabled) {
+        removeButton.closest('[data-code-editor]').remove();
+        renumberCodeEditors();
+        return;
+      }
+      var check = event.target.closest('[data-release-check]');
+      if (check) syncRelease(check.closest('[data-code-editor]'));
     });
 
     renumberCodeEditors();
+  }
+
+  /* ------------------------------------------------ 새로 공개된 코드 자동 표시 */
+
+  // 선생님이 다음 단계를 공개하면 학생이 F5 를 누르지 않아도 화면에 나타나게 한다.
+  var lessonCodes = document.querySelector('.lessoncodes[data-class-id]');
+  if (lessonCodes) {
+    var classId = lessonCodes.getAttribute('data-class-id');
+    var shownCount = Number(lessonCodes.getAttribute('data-released'));
+    window.setInterval(function () {
+      fetch('/classes/' + classId + '/code-state', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (data && Number(data.released) !== shownCount) window.location.reload();
+        })
+        .catch(function () { /* 잠깐 끊겨도 다음 번에 다시 확인한다 */ });
+    }, 10000);
   }
 })();

@@ -32,6 +32,61 @@ function submissionRow(s, { dim = false, returnTo = '/admin' } = {}) {
 </li>`;
 }
 
+/**
+ * 수업 중에 코드를 한 단계씩 공개하는 조작판.
+ * 관리자 메인(현재 수업)과 수업 목록에서 같은 모양으로 쓴다.
+ */
+export function codeReleasePanel(cls, returnTo = '/admin') {
+  const codes = cls?.codes ?? [];
+  if (!codes.length) return `<p class="empty">이 수업에는 아직 코드가 없어요.</p>`;
+
+  const shown = codes.filter((item) => item.released).length;
+  const hidden = codes.length - shown;
+  const back = `<input type="hidden" name="returnTo" value="${esc(returnTo)}">`;
+  const nextTitle = codes.find((item) => !item.released)?.title || '';
+
+  const rows = codes
+    .map((item, index) => {
+      const on = Boolean(item.released);
+      return `<li class="${on ? 'shown' : 'locked'}">
+    <span class="rname">${on ? '👀' : '🔒'} ${esc(item.title || `코드 ${index + 1}`)}</span>
+    <span class="rstate">${on ? '공개 중' : '숨김'}</span>
+    <form method="post" action="/admin/classes/${cls.id}/codes/${index}/release">
+      ${back}
+      <input type="hidden" name="released" value="${on ? '0' : '1'}">
+      <button class="btn ${on ? '' : 'primary'}" type="submit">${on ? '숨기기' : '공개하기'}</button>
+    </form>
+  </li>`;
+    })
+    .join('\n');
+
+  return `<div class="releasepanel">
+  <p class="dim releasecount">코드 ${codes.length}개 중 <b>${shown}개 공개 중</b>${hidden ? ` · ${hidden}개 숨김` : ''}</p>
+  <ul class="releaselist">
+${rows}
+  </ul>
+  <div class="releasebtns">
+    ${
+      hidden
+        ? `<form method="post" action="/admin/classes/${cls.id}/codes/next">
+             ${back}
+             <button class="btn primary" type="submit">▶ 다음 단계 공개${nextTitle ? ` (${esc(nextTitle)})` : ''}</button>
+           </form>
+           <form method="post" action="/admin/classes/${cls.id}/codes/all">
+             ${back}
+             <input type="hidden" name="released" value="1">
+             <button class="btn" type="submit">모두 공개</button>
+           </form>`
+        : `<form method="post" action="/admin/classes/${cls.id}/codes/all" data-confirm="첫 번째 코드만 남기고 모두 다시 숨길까요?">
+             ${back}
+             <input type="hidden" name="released" value="0">
+             <button class="btn" type="submit">처음 상태로 (첫 코드만 공개)</button>
+           </form>`
+    }
+  </div>
+</div>`;
+}
+
 export function adminHome({ current, waiting, recentDone }) {
   const body = `
 <section class="card">
@@ -45,7 +100,9 @@ export function adminHome({ current, waiting, recentDone }) {
         ${current.notice ? `<p class="noticemini">${esc(current.notice)}</p>` : ''}
       </div>
       <a class="btn" href="/admin/classes/${current.id}/edit">수정</a>
-    </div>`
+    </div>
+    <h3 class="releasehead">코드 공개</h3>
+    ${codeReleasePanel(current, '/admin')}`
       : `<p class="empty">현재 수업이 지정되지 않았어요. 수업 목록에서 하나를 <b>현재 수업</b>으로 지정하세요.</p>`
   }
 </section>
@@ -103,6 +160,10 @@ ${classes
     }
     <form method="post" action="/admin/classes/${c.id}/delete" data-confirm="이 수업을 삭제할까요?"><button class="btn danger" type="submit">삭제</button></form>
   </div>
+  <details class="releasedetails"${c.isCurrent ? ' open' : ''}>
+    <summary>코드 공개 (${c.codes.filter((item) => item.released).length}/${c.codes.length})</summary>
+    ${codeReleasePanel(c, '/admin/classes')}
+  </details>
 </li>`,
   )
   .join('\n')}
@@ -174,11 +235,18 @@ ${error ? `<p class="error">${esc(error)}</p>` : ''}
 }
 
 function codeEditor(item, index) {
+  // released 가 없으면(예전에 저장한 코드, 새로 만드는 첫 코드) 공개로 본다.
+  const released = item.released !== false;
   return `<section class="codeeditor" data-code-editor>
     <div class="codeeditorhead">
       <strong data-code-number>코드 ${index + 1}</strong>
       <button class="btn danger coderemove" type="button" data-remove-code>삭제</button>
     </div>
+    <label class="check releasecheck">
+      <input type="checkbox" data-release-check ${released ? 'checked' : ''}>
+      처음부터 학생에게 공개 <span class="dim">(끄면 수업 중에 눌러서 공개)</span>
+    </label>
+    <input type="hidden" name="codeReleased" value="${released ? '1' : '0'}" data-release-field>
     <label>코드 제목</label>
     <input type="text" name="codeTitle" value="${esc(item.title)}" placeholder="예: 1단계 · LED 한 번 켜기">
     <label>코드 내용</label>
