@@ -4,13 +4,41 @@
  * 그대로 코드로 보내는 도구. 수업을 만들거나 코드 단계를 공개/숨기는 것을
  * 채팅에서 받은 내용으로 바로 웹에 반영할 때 쓴다.
  *
- * 필요한 환경변수:
+ * 필요한 환경변수 (프로젝트 루트의 .env 에 넣어두면 자동으로 읽는다):
  *   ADMIN_SITE_URL  대상 주소 (기본값 http://localhost:3000)
  *   ADMIN_PASSWORD  관리자 비밀번호 (필수)
  *
  * 사용법은 이 파일을 인자 없이 실행하면 나온다.
  */
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const PROJECT_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/** .env 가 있으면 읽어서 process.env 에 채운다. 이미 넘겨받은 값은 덮어쓰지 않는다. */
+async function loadDotEnv() {
+  let raw;
+  try {
+    raw = await readFile(path.join(PROJECT_ROOT, '.env'), 'utf8');
+  } catch {
+    return;
+  }
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+await loadDotEnv();
 
 function siteUrl() {
   return (process.env.ADMIN_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
