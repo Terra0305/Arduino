@@ -222,6 +222,12 @@ async function handleAdmin(req, res, url) {
     return html(res, admin.classesPage(await store.listClasses()));
   }
 
+  // 사람이 보는 화면 대신, 자동화 도구(scripts/admin-cli.mjs)가 수업과 공개 상태를
+  // 읽어갈 때 쓰는 주소. /admin 아래라 로그인 없이는 열리지 않는다.
+  if (pathname === '/admin/classes.json' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(await store.listClasses()), { 'Content-Type': 'application/json' });
+  }
+
   if (pathname === '/admin/classes/new' && req.method === 'GET') {
     return html(res, admin.classFormPage({}));
   }

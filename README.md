@@ -93,6 +93,25 @@ git push -u origin main
 | `ADMIN_PASSWORD` | 권장 | 선생님 로그인 비밀번호. 안 정하면 `arduino` |
 | `SESSION_SECRET` | 선택 | 로그인 쿠키 서명 키. 안 정하면 비밀번호에서 만들어 씁니다 |
 
+## Claude Code로 수업 자동 등록하기 (선택)
+
+관리자 화면에서 마우스로 누르는 것과 같은 요청을, `scripts/admin-cli.mjs` 로 직접 보낼 수 있습니다.
+채팅에 수업 내용을 텍스트로 주면 Claude가 이 도구로 바로 사이트에 올려줍니다.
+
+먼저 아래 두 값을 알려주면 됩니다 (`.env` 에 넣어두면 매번 새로 말할 필요 없습니다).
+
+| 변수 | 설명 |
+| --- | --- |
+| `ADMIN_SITE_URL` | 올릴 주소. 로컬 테스트는 `http://localhost:3000`, 실제 배포는 `https://내프로젝트.vercel.app` |
+| `ADMIN_PASSWORD` | 관리자 비밀번호 (위 환경 변수와 같은 값) |
+
+```bash
+ADMIN_SITE_URL=https://내프로젝트.vercel.app ADMIN_PASSWORD=... npm run admin -- list
+```
+
+명령 목록은 `npm run admin` (인자 없이)을 실행하면 나옵니다 — 수업 만들기/수정, 현재 수업 지정,
+코드 단계 공개/숨기기/다음 단계 공개를 모두 지원합니다.
+
 ## 내 컴퓨터에서 확인해 보기 (선택)
 
 배포 전에 화면만 보고 싶을 때 씁니다. `DATABASE_URL` 이 있어야 DB 화면이 뜹니다.
@@ -117,6 +136,7 @@ src/highlight.js     Arduino(C++) 문법 강조
 src/views/           화면 (layout / student / admin)
 public/style.css     스타일 — 큰 글씨, 큰 버튼
 public/app.js        코드 복사, 이름 저장, 그림 업로드, 새 코드 공개 감지
+scripts/admin-cli.mjs  관리자 화면 대신 코드로 수업 등록/공개하는 자동화 도구
 ```
 
 ## 알아두면 좋은 점
