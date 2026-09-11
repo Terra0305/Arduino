@@ -136,12 +136,19 @@ function blankModeLevel(code) {
 const LEVEL_FN = { value: blankValueLevel, pin: blankPinLevel, mode: blankModeLevel };
 export const LEVEL_ORDER = ['value', 'pin', 'mode'];
 
+/** 관리자 화면/스펙에 넣을 코드 제목을 만들 때 쓰는 기본 라벨. */
+export const LEVEL_LABEL = {
+  value: '값만 채우기',
+  pin: '핀 변수까지 채우기',
+  mode: '전체 채우기',
+};
+
 /** 완성 코드를 한 난이도로 빈칸 처리한다. */
 export function makeBlanks(code, level = 'value') {
   const fn = LEVEL_FN[level];
   if (!fn) throw new Error(`알 수 없는 level: ${level} (value | pin | mode 중 하나)`);
   const { code: blanked, answers } = fn(code);
-  return { level, code: blanked, answers, blankCount: answers.length };
+  return { level, label: LEVEL_LABEL[level], code: blanked, answers, blankCount: answers.length };
 }
 
 /** 완성 코드를 난이도별로 한 번에 만든다 (기본: value → pin → mode). */
@@ -184,7 +191,7 @@ if (isMain) {
       const level = levelArg ? levelArg.split('=')[1] : null;
       const stages = level ? [makeBlanks(code, level)] : makeStages(code);
       for (const stage of stages) {
-        console.log(`\n===== ${stage.level} (빈칸 ${stage.blankCount}개) =====`);
+        console.log(`\n===== ${stage.level} · ${stage.label} (빈칸 ${stage.blankCount}개) =====`);
         console.log(stage.code);
         console.error(`(${stage.level} 정답 순서: ${stage.answers.join(', ')})`);
       }
