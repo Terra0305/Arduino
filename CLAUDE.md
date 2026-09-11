@@ -19,6 +19,8 @@ Vercel(서버리스) + Neon Postgres로 운영되며, 프레임워크 없이 Nod
 - `src/views/` — 화면. `layout.js`(공통 뼈대), `student.js`, `admin.js`. 전부 문자열 템플릿으로 HTML을 직접 만든다(React나 템플릿 엔진 없음).
 - `public/` — 정적 파일(`style.css`, `app.js`, 로고). `app.js`는 바닐라 JS로 클라이언트 쪽 상호작용(복사, 토글, 폴링)을 담당.
 - `scripts/admin-cli.mjs` — 관리자 화면 버튼과 같은 동작을 HTTP 요청으로 실행하는 자동화 CLI. 아래 절 참고.
+- `scripts/make-blanks.mjs` — 완성 코드에서 학습 포인트(핀 번호, HIGH/LOW, delay 값 등)를 찾아 빈칸(`____`)으로 자동으로 뚫어주는 도구. `npm run blanks -- <코드 파일>`.
+- `ROADMAP.md` — 앞으로 추가하면 좋을 기능 목록과 진행 상태.
 
 ## 코딩 관례
 

@@ -6,7 +6,8 @@
   "description": "아두이노 수업용 코드 공유 웹",
   "scripts": {
     "start": "node server.js",
-    "admin": "node scripts/admin-cli.mjs"
+    "admin": "node scripts/admin-cli.mjs",
+    "blanks": "node scripts/make-blanks.mjs"
   },
   "engines": {
     "node": ">=20"
