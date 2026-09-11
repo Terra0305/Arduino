@@ -67,11 +67,3 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
    완벽한 휴리스틱은 아니므로 결과를 보여준 뒤 필요하면 손으로 다듬는다. 사용자가 완성 코드를
    채팅으로 주면 이 도구로 단계별 빈칸 버전을 만들고, `scripts/admin-cli.mjs`로 바로 사이트에
    반영하는 흐름으로 쓴다.
-
-   admin-cli의 `codes` 항목은 `title`이 필수라서, spec을 만들 때 기본적으로 이렇게 단계 제목을 붙인다
-   (사용자가 다른 제목을 원하면 그걸 따른다):
-   - **1단계** — 받은 완성 코드 그대로 (빈칸 0개)
-   - **2단계** — `value` 난이도 (`"2단계 · " + LEVEL_LABEL.value`)
-   - **3단계** — `pin` 난이도
-   - **4단계** — `mode` 난이도 (가장 어려움)
-   `LEVEL_LABEL`(`scripts/make-blanks.mjs`에서 export)이 각 난이도의 한국어 설명 문구를 갖고 있다.
