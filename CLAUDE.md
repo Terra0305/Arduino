@@ -224,7 +224,9 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   "▶ 발표 모드" 버튼 또는 `P` 키 → 한 장씩 창 크기에 맞춰 꽉 차게(1920×1080 비율 유지), 방향키·스페이스·PageDown으로
   넘기기, 클릭(왼쪽 25%는 이전), `F` 전체화면, `Home/End`, `Esc` 종료. 없으면 슬라이드가 세로로 길게 이어진 스크롤
   페이지라 수업에 쓰기 불편하다. 새 PPT를 만들 때도 이 기능(`PRESENT_JS`)을 그대로 넣고, CDP로 진입·넘김·크기 변경·종료
-  후 다운로드까지 테스트한다.
+  후 다운로드까지 테스트한다. **키는 글자(`e.key`)가 아니라 물리 키 위치(`e.code`, `KeyP`/`KeyF`)로 인식하고** 한글 입력
+  상태(`ㅔ`/`ㄹ`)에서도 동작하는지 CDP 키 이벤트로 테스트한다(사용자 PC는 한글 입력 상태인 경우가 많아, 버튼 클릭만 테스트하면
+  놓친다).
 - **폰트는 HTML 안에 내장한다**(`slides/PretendardVariable.woff2`를 base64 `@font-face`로, 외부 폰트 링크 없음).
   그래야 화면과 PNG가 같고 교실 인터넷이 불안해도 글꼴이 안 깨진다. 한 줄이어야 하는 글자는 `white-space:nowrap`.
   폰트 파일은 `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2/PretendardVariable.woff2`.
