@@ -220,6 +220,11 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   검사로는 안 잡힌다. Node 24의 `WebSocket`으로 Chrome을 `--remote-debugging-port`로 띄워(CDP) 다운로드 버튼을 누르고
   (`Browser.setDownloadBehavior`) ZIP을 받아 풀어서 32장을 격자 이미지로 훑는다. 사이트 코드와 PPT는 정답칩·코드 줄·값·
   번호를 스크립트로 자동 대조하고, 정답을 채운 코드는 `clang++ -fsyntax-only`(가짜 Arduino 헤더)로 컴파일해 본다.
+- **사용자는 PNG가 아니라 HTML을 직접 띄워 수업할 수 있다.** 그래서 HTML에 **발표 모드**를 넣어 둔다: 상단 막대의
+  "▶ 발표 모드" 버튼 또는 `P` 키 → 한 장씩 창 크기에 맞춰 꽉 차게(1920×1080 비율 유지), 방향키·스페이스·PageDown으로
+  넘기기, 클릭(왼쪽 25%는 이전), `F` 전체화면, `Home/End`, `Esc` 종료. 없으면 슬라이드가 세로로 길게 이어진 스크롤
+  페이지라 수업에 쓰기 불편하다. 새 PPT를 만들 때도 이 기능(`PRESENT_JS`)을 그대로 넣고, CDP로 진입·넘김·크기 변경·종료
+  후 다운로드까지 테스트한다.
 - **폰트는 HTML 안에 내장한다**(`slides/PretendardVariable.woff2`를 base64 `@font-face`로, 외부 폰트 링크 없음).
   그래야 화면과 PNG가 같고 교실 인터넷이 불안해도 글꼴이 안 깨진다. 한 줄이어야 하는 글자는 `white-space:nowrap`.
   폰트 파일은 `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2/PretendardVariable.woff2`.
