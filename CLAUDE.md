@@ -215,7 +215,13 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   `arduino-hado.vercel.app`). 퀴즈에 오늘 코드에 안 나온 문법이 있으면 힌트 줄을 넣는다.
 - **파일**: `slides/codemode3-potentiometer-led.html`(산출물)과 `slides/gen_slides_codemode3.py`(생성
   스크립트, `python3 gen_slides_codemode3.py <출력 경로>`). 다음 수업은 이 스크립트를 복사해 내용만 바꾼다.
-- **검증**: 헤드리스 Chrome으로 `.slide`별 넘침을 검사하고 몇 장을 캡처해 눈으로 본다. 다운로드 버튼을
-  실제로 눌러보는 것은 못 하니 사용자에게 한 번 눌러보라고 안내한다.
+- **검증**: 헤드리스 Chrome으로 `.slide`별 넘침을 검사하고 몇 장을 캡처해 눈으로 본다. **브라우저 화면만 보지 말고
+  다운로드한 PNG ZIP까지 확인한다** — 내보낼 때 웹폰트가 빠지면 글자 폭이 달라져 줄바꿈·겹침이 생기고, 브라우저 화면
+  검사로는 안 잡힌다. Node 24의 `WebSocket`으로 Chrome을 `--remote-debugging-port`로 띄워(CDP) 다운로드 버튼을 누르고
+  (`Browser.setDownloadBehavior`) ZIP을 받아 풀어서 32장을 격자 이미지로 훑는다. 사이트 코드와 PPT는 정답칩·코드 줄·값·
+  번호를 스크립트로 자동 대조하고, 정답을 채운 코드는 `clang++ -fsyntax-only`(가짜 Arduino 헤더)로 컴파일해 본다.
+- **폰트는 HTML 안에 내장한다**(`slides/PretendardVariable.woff2`를 base64 `@font-face`로, 외부 폰트 링크 없음).
+  그래야 화면과 PNG가 같고 교실 인터넷이 불안해도 글꼴이 안 깨진다. 한 줄이어야 하는 글자는 `white-space:nowrap`.
+  폰트 파일은 `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2/PretendardVariable.woff2`.
 - `slides/`는 커밋하지 않는 로컬 산출물이다. `.gitignore`에 없으니 `git add -A` / `git add .`을 쓰지 말고
   파일을 지정해서 stage한다.
