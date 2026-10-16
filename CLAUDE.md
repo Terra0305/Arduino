@@ -156,7 +156,7 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
 쓴다**(사용자 지시). 준비물에도 "브레드보드 1개"를 넣는다.
 
 - **사용자가 틴커캐드(Tinkercad) 스크린샷을 주면 그걸 그대로 쓰는 게 최우선이다.** 코드모드 #3은
-  `slides/wiring-codemode3-tinkercad.png`(사용자 제공)를 PPT와 사이트 `wiringImage`에 썼다. 받으면 확대해서
+  `slides/images/wiring-codemode3-tinkercad.png`(사용자 제공)를 PPT와 사이트 `wiringImage`에 썼다. 받으면 확대해서
   배선이 수업 회로와 맞는지 먼저 확인하고, 선 색이 규칙과 다르면(아래) 사용자에게 알린다. 스크린샷에 마우스를 올려서
   생긴 틴커캐드 표시(빨간 네모·초록 동그라미 줄)가 있으면 아이들이 헷갈리니, 같은 모양의 빈 구멍 부분으로 덮어서 지운다
   (헤드리스 Chrome 캔버스로 가능, 원본은 `...-original.png`로 보관하고 지웠다고 사용자에게 말한다).
@@ -165,7 +165,7 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   Arduino UNO(파란 보드, POWER·ANALOG IN·DIGITAL 핀 이름). **Arduino는 브레드보드 아래쪽에 두고**(보통 그렇게
   놓는다), 부품은 브레드보드 아래 반쪽(a~e행)에 꽂아 아래 전원 줄을 쓰고, 점퍼선은 Arduino 핀에서 위로 올린다.
   단순 도식(블록과 선)은 쓰지 않는다. 선이 겹치지 않는지, 글자가 선에 가리지 않는지 렌더링해서 눈으로 확인한다.
-  (`slides/make_wiring_codemode3.py`와 `wiring-codemode3.svg/png`는 이 지시 전의 **옛 단순 도식**이라 더 쓰지 않는다.)
+  (`slides/scripts/make_wiring_codemode3.py`와 `slides/images/wiring-codemode3.svg/png`는 이 지시 전의 **옛 단순 도식**이라 더 쓰지 않는다.)
 - **선 색 규칙**: 빨강 = 5V(+ 줄), 검정 = GND(− 줄), 나머지 신호선은 빨강·검정이 아닌 색(노랑·초록·파랑 등).
   PPT 체크리스트에는 선 색을 적지 않고 위치(왼쪽/오른쪽 → + 줄 / − 줄)로 적어 그림과 어긋나지 않게 한다.
 - 그림은 PNG로 `wiringImage`(`data:image/png;base64,...`)에 올린다. 학생 화면에는 "🔌 연결 방법 보기" 버튼으로 나온다.
@@ -213,8 +213,14 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   강사용 메모 슬라이드는 학생에게 파일을 줄 때 뺀다. 정답 슬라이드를 학생용 파일에서 뺄지는 사용자에게 묻는다.
 - 코드 전체는 슬라이드에 싣지 않는다. 핵심 줄만 크게 보여주고 "사이트에서 복사해요"로 안내한다(주소는
   `arduino-hado.vercel.app`). 퀴즈에 오늘 코드에 안 나온 문법이 있으면 힌트 줄을 넣는다.
-- **파일**: `slides/codemode3-potentiometer-led.html`(산출물)과 `slides/gen_slides_codemode3.py`(생성
-  스크립트, `python3 gen_slides_codemode3.py <출력 경로>`). 다음 수업은 이 스크립트를 복사해 내용만 바꾼다.
+- **폴더 구조**(`slides/` 아래에 섞어 두지 않는다, 사용자 지시): `ppt/`(산출물 HTML), `images/`(회로 그림 등 사진),
+  `scripts/`(생성 스크립트), `assets/`(폰트). 새 파일은 종류에 맞는 폴더에 넣는다.
+- **파일 이름**(사용자 지시, 반드시 지킨다): 슬라이드 산출물은 **`YYYYMMDD 아두이노수업(수업 주제).html`** 형식이다.
+  날짜는 수업 날짜(사용자가 알려 주고, 모르면 묻는다), 주제는 사이트 수업 제목처럼 짧게. 예:
+  `slides/ppt/20261017 아두이노수업(가변저항 led 조절).html`. 영문 슬러그 이름(`codemode3-...`)으로 만들지 않는다.
+- **생성 스크립트**: `slides/scripts/gen_slides_codemode3.py`(`cd slides/scripts && python3 gen_slides_codemode3.py <출력 경로>`,
+  이미지·폰트는 `../images`, `../assets`에서 읽는다). 다음 수업은 이 스크립트를 복사해 내용만 바꾸고, 출력 경로는
+  위 파일 이름 규칙대로 `slides/ppt/` 아래로 준다.
 - **검증**: 헤드리스 Chrome으로 `.slide`별 넘침을 검사하고 몇 장을 캡처해 눈으로 본다. **브라우저 화면만 보지 말고
   다운로드한 PNG ZIP까지 확인한다** — 내보낼 때 웹폰트가 빠지면 글자 폭이 달라져 줄바꿈·겹침이 생기고, 브라우저 화면
   검사로는 안 잡힌다. Node 24의 `WebSocket`으로 Chrome을 `--remote-debugging-port`로 띄워(CDP) 다운로드 버튼을 누르고
@@ -227,7 +233,7 @@ DATABASE_URL="postgres://..." ADMIN_PASSWORD=test npm start
   후 다운로드까지 테스트한다. **키는 글자(`e.key`)가 아니라 물리 키 위치(`e.code`, `KeyP`/`KeyF`)로 인식하고** 한글 입력
   상태(`ㅔ`/`ㄹ`)에서도 동작하는지 CDP 키 이벤트로 테스트한다(사용자 PC는 한글 입력 상태인 경우가 많아, 버튼 클릭만 테스트하면
   놓친다).
-- **폰트는 HTML 안에 내장한다**(`slides/PretendardVariable.woff2`를 base64 `@font-face`로, 외부 폰트 링크 없음).
+- **폰트는 HTML 안에 내장한다**(`slides/assets/PretendardVariable.woff2`를 base64 `@font-face`로, 외부 폰트 링크 없음).
   그래야 화면과 PNG가 같고 교실 인터넷이 불안해도 글꼴이 안 깨진다. 한 줄이어야 하는 글자는 `white-space:nowrap`.
   폰트 파일은 `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2/PretendardVariable.woff2`.
 - `slides/`는 커밋하지 않는 로컬 산출물이다. `.gitignore`에 없으니 `git add -A` / `git add .`을 쓰지 말고
